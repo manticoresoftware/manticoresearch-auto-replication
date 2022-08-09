@@ -1,5 +1,5 @@
 {
-  "name": "djklim87/manticoresearch-auto-replication",
+  "name": "manticoresoftware/manticoresearch-auto-replication",
   "description": "Package to support automatically replication for ManticoreSearch in Kubernetes cluster",
   "license": "Apache-2.0",
   "authors": [
