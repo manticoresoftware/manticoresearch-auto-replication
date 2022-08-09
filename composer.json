@@ -1,0 +1,29 @@
+{
+  "name": "djklim87/manticoresearch-auto-replication",
+  "description": "Package to support automatically replication for ManticoreSearch in Kubernetes cluster",
+  "license": "Apache-2.0",
+  "authors": [
+    {
+      "name": "Todrik Klim",
+      "email": "klim@manticoresearch.com",
+      "homepage": "https://manticoresearch.com/",
+      "role": "Developer"
+    }
+  ],
+  "require": {
+    "php": ">=7.4",
+    "guzzlehttp/guzzle": "^7.3",
+    "ext-mysqli": "*",
+    "ext-json": "*",
+    "ext-curl": "*",
+    "analog/analog": "^1.0"
+  },
+  "require-dev": {
+    "roave/security-advisories": "dev-latest"
+  },
+  "autoload": {
+    "psr-4": {
+      "Core\\": "./src/"
+    }
+  }
+}
