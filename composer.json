@@ -1,6 +1,6 @@
 {
   "name": "manticoresoftware/manticoresearch-auto-replication",
-  "description": "Package to support automatically replication for ManticoreSearch in Kubernetes cluster",
+  "description": "Library for automation of replication of Manticore Search in Kubernetes. Used by Manticore Helm chart and other projects",
   "license": "Apache-2.0",
   "authors": [
     {
