@@ -7,7 +7,7 @@ use Core\K8s\Resources;
 
 class ManticoreJson
 {
-    private $conf = [];
+    protected $conf = [];
     private string $path;
     private string $clusterName;
     private int $binaryPort;

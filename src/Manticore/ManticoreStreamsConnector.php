@@ -4,10 +4,13 @@ namespace Core\Manticore;
 
 class ManticoreStreamsConnector extends ManticoreConnector
 {
+    public const PQ_INDEX_NAME = 'pq';
+    public const TESTS_INDEX_NAME = 'tests';
     public const INDEX_TYPE_PERCOLATE = 'percolate';
     public const INDEX_TYPE_RT = 'rt';
 
-    private const INDEX_LIST = ['pq', 'tests'];
+    public const INDEX_LIST = [self::PQ_INDEX_NAME, self::TESTS_INDEX_NAME];
+    public const INDEX_TYPES = [self::PQ_INDEX_NAME => self::INDEX_TYPE_PERCOLATE, self::TESTS_INDEX_NAME => self::INDEX_TYPE_RT];
 
     public function checkIsTablesInCluster(): bool
     {
@@ -28,18 +31,20 @@ class ManticoreStreamsConnector extends ManticoreConnector
 
         $result = $matchesCount === count(self::INDEX_LIST);
 
-        if (!$result){
-            \Analog::warning("Tables mismatch. Expected ".implode(',', self::INDEX_LIST)
-                ." found ".implode(',', $inClusterIndexes));
+        if ( ! $result) {
+            \Analog::warning(
+                "Tables mismatch. Expected ".implode(',', self::INDEX_LIST)
+                ." found ".implode(',', $inClusterIndexes)
+            );
         }
-        
+
         return $result;
     }
 
 
     public function createTable($tableName, $type): bool
     {
-        if ( ! in_array($type, ['percolate', 'rt'])) {
+        if ( ! in_array($type, [self::INDEX_TYPE_PERCOLATE, self::INDEX_TYPE_RT])) {
             throw new \RuntimeException('Wrong table type '.$type);
         }
 
@@ -70,17 +75,17 @@ class ManticoreStreamsConnector extends ManticoreConnector
     {
         if ($this->checkClusterName()) {
             if ( ! $this->checkIsTablesInCluster()) {
-                if ($this->isTableExist('pq') && $this->isTableExist('tests')
-                    && $this->addTableToCluster('pq')
-                    && $this->addTableToCluster('tests')
+                if ($this->isTableExist(self::PQ_INDEX_NAME) && $this->isTableExist(self::TESTS_INDEX_NAME)
+                    && $this->addTableToCluster(self::PQ_INDEX_NAME)
+                    && $this->addTableToCluster(self::TESTS_INDEX_NAME)
                 ) {
                     return true;
                 }
 
-                if ($this->createTable('pq', self::INDEX_TYPE_PERCOLATE)
-                    && $this->addTableToCluster('pq')
-                    && $this->createTable('tests', self::INDEX_TYPE_RT)
-                    && $this->addTableToCluster('tests')
+                if ($this->createTable(self::PQ_INDEX_NAME, self::INDEX_TYPE_PERCOLATE)
+                    && $this->addTableToCluster(self::PQ_INDEX_NAME)
+                    && $this->createTable(self::TESTS_INDEX_NAME, self::INDEX_TYPE_RT)
+                    && $this->addTableToCluster(self::TESTS_INDEX_NAME)
                 ) {
                     return true;
                 }
@@ -92,10 +97,10 @@ class ManticoreStreamsConnector extends ManticoreConnector
         }
 
         if ($this->createCluster()
-            && $this->createTable('pq', self::INDEX_TYPE_PERCOLATE)
-            && $this->addTableToCluster('pq')
-            && $this->createTable('tests', self::INDEX_TYPE_RT)
-            && $this->addTableToCluster('tests')
+            && $this->createTable(self::PQ_INDEX_NAME, self::INDEX_TYPE_PERCOLATE)
+            && $this->addTableToCluster(self::PQ_INDEX_NAME)
+            && $this->createTable(self::TESTS_INDEX_NAME, self::INDEX_TYPE_RT)
+            && $this->addTableToCluster(self::TESTS_INDEX_NAME)
         ) {
             return true;
         }
