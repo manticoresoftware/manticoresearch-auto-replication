@@ -9,7 +9,7 @@ class ManticoreJson
 {
     protected $conf = [];
     private string $path;
-    private string $clusterName;
+    protected string $clusterName;
     private int $binaryPort;
 
     public function __construct($clusterName, $binaryPort = 9312)

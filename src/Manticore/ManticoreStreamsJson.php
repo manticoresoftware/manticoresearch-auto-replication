@@ -4,13 +4,17 @@ namespace Core\Manticore;
 
 
 use Analog;
+use Core\Notifications\NotificationInterface;
 
 class ManticoreStreamsJson extends ManticoreJson
 {
+    private $notification;
 
-    public function __construct($clusterName, $binaryPort = 9312)
+    public function __construct($clusterName, NotificationInterface $notification, $binaryPort = 9312)
     {
         parent::__construct($clusterName, $binaryPort);
+
+        $this->notification = $notification;
         $this->restoreExistingIndexes();
     }
 
@@ -25,6 +29,7 @@ class ManticoreStreamsJson extends ManticoreJson
                 if ($this->checkIndexFilesExist($index)) {
                     $this->conf["indexes"][$index] = ['type' => $type, 'path' => $index];
                     Analog::info('Index '.$index.' ('.$type.') was returned in manticore.json');
+                    $this->notification->sendMessage('Index '.$index.' ('.$type.') in cluster '.$this->clusterName.' was returned in manticore.json');
                 }
             }
         }
