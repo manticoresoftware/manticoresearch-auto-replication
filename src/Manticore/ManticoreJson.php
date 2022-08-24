@@ -137,7 +137,7 @@ class ManticoreJson
     /**
      * @throws \JsonException
      */
-    private function save(): void
+    protected function save(): void
     {
         Analog::log("Save manticore.json ".json_encode($this->conf));
         file_put_contents($this->path, json_encode($this->conf, JSON_THROW_ON_ERROR | JSON_PRETTY_PRINT));

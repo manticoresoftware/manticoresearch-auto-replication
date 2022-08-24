@@ -21,16 +21,22 @@ class ManticoreStreamsJson extends ManticoreJson
     private function restoreExistingIndexes(): void
     {
         if ($this->conf !== []) {
+            $updated = false;
             foreach (ManticoreStreamsConnector::INDEX_TYPES as $index => $type) {
                 if (isset($this->conf["indexes"][$index])) {
                     continue;
                 }
 
                 if ($this->checkIndexFilesExist($index)) {
+                    $updated = true;
                     $this->conf["indexes"][$index] = ['type' => $type, 'path' => $index];
                     Analog::info('Index '.$index.' ('.$type.') was returned in manticore.json');
                     $this->notification->sendMessage('Index '.$index.' ('.$type.') in cluster '.$this->clusterName.' was returned in manticore.json');
                 }
+            }
+
+            if ($updated) {
+                $this->save();
             }
         }
     }
