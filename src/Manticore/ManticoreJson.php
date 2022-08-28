@@ -7,9 +7,9 @@ use Core\K8s\Resources;
 
 class ManticoreJson
 {
-    private $conf = [];
+    protected $conf = [];
     private string $path;
-    private string $clusterName;
+    protected string $clusterName;
     private int $binaryPort;
 
     public function __construct($clusterName, $binaryPort = 9312)
@@ -137,7 +137,7 @@ class ManticoreJson
     /**
      * @throws \JsonException
      */
-    private function save(): void
+    protected function save(): void
     {
         Analog::log("Save manticore.json ".json_encode($this->conf));
         file_put_contents($this->path, json_encode($this->conf, JSON_THROW_ON_ERROR | JSON_PRETTY_PRINT));
