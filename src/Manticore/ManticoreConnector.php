@@ -211,11 +211,19 @@ class ManticoreConnector
 
     protected function query($sql, $logQuery = true, $attempts = 0)
     {
-        $result = $this->connection->query($sql);
+        try {
+            if ($logQuery) {
+                Analog::log('Query: '.$sql);
+            }
+            $result = $this->connection->query($sql);
 
-        if ($logQuery) {
-            Analog::log('Query: '.$sql);
+        } catch (\Exception $exception) {
+            Analog::log("Exception until query processing. Query: ".$sql."\n. Error: ".$exception);
+            if ($attempts > $this->maxAttempts) {
+                throw new \RuntimeException("Can't process query ".$sql);
+            }
         }
+
 
         if ($this->getConnectionError()) {
             Analog::log("Error until query processing. Query: ".$sql."\n. Error: ".$this->getConnectionError());
@@ -228,6 +236,7 @@ class ManticoreConnector
 
             return $this->query($sql, $logQuery, $attempts);
         }
+
 
         return $result;
     }
