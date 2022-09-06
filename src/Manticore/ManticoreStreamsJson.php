@@ -15,7 +15,13 @@ class ManticoreStreamsJson extends ManticoreJson
         parent::__construct($clusterName, $binaryPort);
 
         $this->notification = $notification;
-        Analog::log('Tests metadata ' . file_get_contents('/var/lib/manticore/tests/tests.meta'));
+        $testsIndexMetadata = '/var/lib/manticore/tests/tests.meta';
+        if (file_exists($testsIndexMetadata)){
+            Analog::log('Tests metadata ' . file_get_contents($testsIndexMetadata));
+        }else{
+            Analog::log('Tests metadata not found');
+        }
+
         $this->restoreExistingIndexes();
     }
 
