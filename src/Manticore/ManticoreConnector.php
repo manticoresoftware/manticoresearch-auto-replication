@@ -40,7 +40,7 @@ class ManticoreConnector
             sleep(1);
         }
 
-        if ($this->connection->connect_errno) {
+        if ($this->connection == null || $this->connection->connect_errno) {
             throw new \RuntimeException("Can't connect to Manticore at ".$host.':'.$port);
         }
     }
