@@ -15,7 +15,7 @@ class Resources
     public function __construct(ApiClient $api, array $labels, NotificationInterface $notification)
     {
         $this->setLabels($labels);
-        $this->api          = $api;
+        $this->api = $api;
         $this->notification = $notification;
     }
 
@@ -35,9 +35,9 @@ class Resources
      */
     public function getPods(): array
     {
-        if ( ! $this->pods) {
+        if (!$this->pods) {
             $pods = $this->api->getManticorePods($this->getLabels());
-            if ( ! isset($pods['items'])) {
+            if (!isset($pods['items'])) {
                 Analog::log('K8s api don\'t respond');
                 exit(1);
             }
@@ -46,7 +46,9 @@ class Resources
                 if ($pod['status']['phase'] === 'Running' || $pod['status']['phase'] === 'Pending') {
                     $this->pods[] = $pod;
                 } else {
-                    $this->notification->sendMessage("Bad pod phase for ".$pod['metadata']['name'].' phase '.$pod['status']['phase']);
+                    $this->notification->sendMessage(
+                        "Bad pod phase for ".$pod['metadata']['name'].' phase '.$pod['status']['phase']
+                    );
                     Analog::log('Error pod phase '.json_encode($pod));
                 }
             }
@@ -96,11 +98,24 @@ class Resources
         $hostname = gethostname();
         foreach ($this->pods as $pod) {
             if ($pod['status']['phase'] === 'Running' || $pod['status']['phase'] === 'Pending') {
+                if (!empty($pod['status']['conditions'])) {
+                    $readyCondition = false;
+                    foreach ($pod['status']['conditions'] as $condition) {
+                        if ($condition['type'] === 'Ready' && $condition['status'] === 'True') {
+                            $readyCondition = true;
+                        }
+                    }
+
+                    if (!$readyCondition){
+                        continue;
+                    }
+                }
+
                 if (isset($pod['status']['podIP'])) {
                     $ips[$pod['metadata']['name']] = $pod['status']['podIP'];
                 } elseif ($pod['metadata']['name'] === $hostname) {
                     $selfIp = getHostByName($hostname);
-                    if ( ! empty($selfIp)) {
+                    if (!empty($selfIp)) {
                         $ips[$hostname] = $selfIp;
                     }
                 }
@@ -151,7 +166,7 @@ class Resources
     public function getMinReplicaName(): string
     {
         $hostname = gethostname();
-        $parts    = explode("-", $hostname);
+        $parts = explode("-", $hostname);
         array_pop($parts);
         $parts[] = 0;
 
@@ -164,7 +179,7 @@ class Resources
             return 0;
         }
         $hostname = gethostname();
-        $parts    = explode("-", $hostname);
+        $parts = explode("-", $hostname);
 
         return (int)array_pop($parts);
     }
