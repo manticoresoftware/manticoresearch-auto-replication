@@ -44,6 +44,20 @@ class Resources
 
             foreach ($pods['items'] as $pod) {
                 if ($pod['status']['phase'] === 'Running' || $pod['status']['phase'] === 'Pending') {
+
+                    if (!empty($pod['status']['conditions'])) {
+                        $readyCondition = false;
+                        foreach ($pod['status']['conditions'] as $condition) {
+                            if ($condition['type'] === 'Ready' && $condition['status'] === 'True') {
+                                $readyCondition = true;
+                            }
+                        }
+
+                        if (!$readyCondition){
+                            continue;
+                        }
+                    }
+                    
                     $this->pods[] = $pod;
                 } else {
                     $this->notification->sendMessage(
@@ -98,19 +112,6 @@ class Resources
         $hostname = gethostname();
         foreach ($this->pods as $pod) {
             if ($pod['status']['phase'] === 'Running' || $pod['status']['phase'] === 'Pending') {
-                if (!empty($pod['status']['conditions'])) {
-                    $readyCondition = false;
-                    foreach ($pod['status']['conditions'] as $condition) {
-                        if ($condition['type'] === 'Ready' && $condition['status'] === 'True') {
-                            $readyCondition = true;
-                        }
-                    }
-
-                    if (!$readyCondition){
-                        continue;
-                    }
-                }
-
                 if (isset($pod['status']['podIP'])) {
                     $ips[$pod['metadata']['name']] = $pod['status']['podIP'];
                 } elseif ($pod['metadata']['name'] === $hostname) {
