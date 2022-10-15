@@ -57,7 +57,7 @@ class Resources
                             continue;
                         }
                     }
-                    
+
                     $this->pods[] = $pod;
                 } else {
                     $this->notification->sendMessage(
