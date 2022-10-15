@@ -40,7 +40,7 @@ class ManticoreConnector
             sleep(1);
         }
 
-        if ($this->connection->connect_errno) {
+        if ($this->connection == null || $this->connection->connect_errno) {
             throw new \RuntimeException("Can't connect to Manticore at ".$host.':'.$port);
         }
     }
@@ -164,7 +164,7 @@ class ManticoreConnector
 
     public function restoreCluster($log = true): bool
     {
-        $this->query("SET CLUSTER GLOBAL 'pc.bootstrap' = 1", $log);
+        $this->query("SET CLUSTER ".$this->clusterName." GLOBAL 'pc.bootstrap' = 1", $log);
 
         if ($this->getConnectionError()) {
             return false;
