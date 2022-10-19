@@ -133,6 +133,31 @@ class ManticoreJson
 
         $this->updateNodesList($availableNodes);
     }
+    
+    public function isAllNodesNonPrimary(Resources $resources, $qlPort): bool
+    {
+        $nodes = $resources->getPodsIp();
+
+        $nonPrimaryNodesCount = 0;
+        foreach ($nodes as $hostname => $ip) {
+            if ($hostname === gethostname()) {
+                continue;
+            }
+
+
+            try {
+                $connection = new ManticoreConnector($ip, $qlPort, $this->clusterName, 60);
+                if (!$connection->isClusterPrimary()) {
+                    $nonPrimaryNodesCount++;
+                }
+
+            } catch (\RuntimeException $exception) {
+                Analog::log("Node at $ip no more available\n".$exception->getMessage());
+            }
+        }
+
+        return (count($nodes)-1 === $nonPrimaryNodesCount);
+    }
 
     /**
      * @throws \JsonException
