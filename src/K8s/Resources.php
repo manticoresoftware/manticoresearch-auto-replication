@@ -44,7 +44,6 @@ class Resources
 
             foreach ($pods['items'] as $pod) {
                 if ($pod['status']['phase'] === 'Running' || $pod['status']['phase'] === 'Pending') {
-
                     if (!empty($pod['status']['conditions'])) {
                         $readyCondition = false;
                         foreach ($pod['status']['conditions'] as $condition) {
@@ -53,7 +52,7 @@ class Resources
                             }
                         }
 
-                        if (!$readyCondition){
+                        if (!$readyCondition) {
                             continue;
                         }
                     }
@@ -82,13 +81,13 @@ class Resources
     /**
      * @throws \JsonException
      */
-    public function getOldestActivePodName()
+    public function getOldestActivePodName($skipSelf = true)
     {
         $currentPodHostname = gethostname();
 
         $pods = [];
         foreach ($this->getPods() as $pod) {
-            if ($pod['metadata']['name'] === $currentPodHostname) {
+            if ($skipSelf && $pod['metadata']['name'] === $currentPodHostname) {
                 continue;
             }
             $pods[$pod['status']['startTime']] = $pod['metadata']['name'];
@@ -144,7 +143,7 @@ class Resources
     }
 
 
-    public function getMinAvailableReplica()
+    public function getMinAvailableReplica($skipSelf = true)
     {
         $podsList = $this->getPodsHostnames();
         if ($podsList === []) {
@@ -156,7 +155,7 @@ class Resources
 
         $min = array_shift($podsList);
 
-        if ($min === gethostname()) {
+        if ($skipSelf && $min === gethostname()) {
             // skip itself
             $min = array_shift($podsList);
         }

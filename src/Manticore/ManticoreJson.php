@@ -47,7 +47,7 @@ class ManticoreJson
             if (file_exists($this->path)) {
                 try {
                     $manticoreJson = file_get_contents($this->path);
-                    Analog::log("Manticore json content: ".$manticoreJson);
+                    Analog::debug("Manticore json content: ".$manticoreJson);
                     $this->conf = json_decode($manticoreJson, true);
                 } catch (\Exception $exception) {
                     $this->conf = [];
@@ -133,7 +133,7 @@ class ManticoreJson
 
         $this->updateNodesList($availableNodes);
     }
-    
+
     public function isAllNodesNonPrimary(Resources $resources, $qlPort): bool
     {
         $nodes = $resources->getPodsIp();
