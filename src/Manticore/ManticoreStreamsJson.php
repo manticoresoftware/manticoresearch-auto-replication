@@ -16,9 +16,7 @@ class ManticoreStreamsJson extends ManticoreJson
 
         $this->notification = $notification;
         $testsIndexMetadata = '/var/lib/manticore/tests/tests.meta';
-        if (file_exists($testsIndexMetadata)){
-            Analog::log('Tests metadata ' . file_get_contents($testsIndexMetadata));
-        }else{
+        if (!file_exists($testsIndexMetadata)){
             Analog::log('Tests metadata not found');
         }
 
