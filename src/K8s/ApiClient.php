@@ -22,6 +22,10 @@ class ApiClient
     public const TYPE_SECRETS = 'secrets';
     public const TYPE_PVC = 'persistentvolumeclaims';
 
+    public const PROD_MODE = 'prod';
+
+    public const DEV_MODE = 'dev';
+
 
     private string $apiUrl = 'https://kubernetes.default.svc';
     private string $cert = '/var/run/secrets/kubernetes.io/serviceaccount/ca.crt';
@@ -39,7 +43,10 @@ class ApiClient
     private string $bearer;
     private Client $httpClient;
     private string $userAgent;
-    private $namespace;
+
+    private string $namespace;
+
+    private string $mode = self::PROD_MODE;
 
     public function __construct()
     {
@@ -64,6 +71,25 @@ class ApiClient
         );
     }
 
+    public function setApiUrl($apiUrl): void
+    {
+        $this->apiUrl = $apiUrl;
+    }
+
+    public function setNamespace($namespace): void
+    {
+        $this->namespace = $namespace;
+    }
+
+    public function setMode($mode): void
+    {
+        if (in_array($mode, ['prod', 'dev'])) {
+            $this->mode = $mode;
+        } else {
+            throw new \RuntimeException('Wrong mode. Allowed only "prod" and "dev" modes');
+        }
+    }
+
     /**
      * @throws JsonException
      */
@@ -74,15 +100,20 @@ class ApiClient
 
     private function request($section, $type = "GET", $noNamespace = false, array $labels = null)
     {
-        $params = [
-            'verify'  => $this->cert,
-            'version' => 2.0,
-            'headers' => [
-                'Authorization' => 'Bearer '.$this->bearer,
-                'Accept'        => 'application/json',
-                'User-Agent'    => $this->userAgent,
-            ],
-        ];
+        $params = [];
+
+        if ($this->mode === self::PROD_MODE){
+            $params = [
+                'verify'  => $this->cert,
+                'version' => 2.0,
+                'headers' => [
+                    'Authorization' => 'Bearer '.$this->bearer,
+                    'Accept'        => 'application/json',
+                    'User-Agent'    => $this->userAgent,
+                ],
+            ];
+        }
+
 
         $url = $this->getUrl($section, $noNamespace);
         if ($labels) {
