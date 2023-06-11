@@ -158,7 +158,10 @@ class Resources
 
         foreach ($this->pods as $pod) {
             if ($pod['status']['phase'] === 'Running' || $pod['status']['phase'] === 'Pending') {
-                $hostnames[] = $pod['metadata']['name'].'.'.$pod['spec']['subdomain'].'.'.$this->namespace.'.svc.cluster.local';
+                $hostnames[] = $pod['metadata']['name'].
+                    '.'.$pod['spec']['subdomain'].
+                    '.'.$pod['metadata']['namespace'].
+                    '.svc.cluster.local';
             }
         }
 
