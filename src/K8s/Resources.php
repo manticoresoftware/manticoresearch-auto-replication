@@ -11,12 +11,18 @@ class Resources
     private ApiClient $api;
     private NotificationInterface $notification;
     private array $pods = [];
+    private string $namespace = '';
 
     public function __construct(ApiClient $api, array $labels, NotificationInterface $notification)
     {
         $this->setLabels($labels);
         $this->api = $api;
         $this->notification = $notification;
+    }
+
+    private function setNamespace($namespace)
+    {
+        $this->namespace = $namespace;
     }
 
     private function setLabels(array $labels): void
@@ -136,6 +142,23 @@ class Resources
         foreach ($this->pods as $pod) {
             if ($pod['status']['phase'] === 'Running' || $pod['status']['phase'] === 'Pending') {
                 $hostnames[] = $pod['metadata']['name'];
+            }
+        }
+
+        return $hostnames;
+    }
+
+    public function getPodsFullHostnames(): array
+    {
+        if (defined('DEV') && DEV === true) {
+            return [];
+        }
+        $hostnames = [];
+        $this->getPods();
+
+        foreach ($this->pods as $pod) {
+            if ($pod['status']['phase'] === 'Running' || $pod['status']['phase'] === 'Pending') {
+                $hostnames[] = $pod['metadata']['name'].'.'.$pod['spec']['subdomain'].'.'.$this->namespace.'.svc.cluster.local';
             }
         }
 
