@@ -11,18 +11,12 @@ class Resources
     private ApiClient $api;
     private NotificationInterface $notification;
     private array $pods = [];
-    private string $namespace = '';
 
     public function __construct(ApiClient $api, array $labels, NotificationInterface $notification)
     {
         $this->setLabels($labels);
         $this->api = $api;
         $this->notification = $notification;
-    }
-
-    private function setNamespace($namespace)
-    {
-        $this->namespace = $namespace;
     }
 
     private function setLabels(array $labels): void
