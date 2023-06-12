@@ -142,6 +142,26 @@ class Resources
         return $hostnames;
     }
 
+    public function getPodsFullHostnames(): array
+    {
+        if (defined('DEV') && DEV === true) {
+            return [];
+        }
+        $hostnames = [];
+        $this->getPods();
+
+        foreach ($this->pods as $pod) {
+            if ($pod['status']['phase'] === 'Running' || $pod['status']['phase'] === 'Pending') {
+                $hostnames[] = $pod['metadata']['name'].
+                    '.'.$pod['spec']['subdomain'].
+                    '.'.$pod['metadata']['namespace'].
+                    '.svc.cluster.local';
+            }
+        }
+
+        return $hostnames;
+    }
+
 
     public function getMinAvailableReplica($skipSelf = true)
     {
