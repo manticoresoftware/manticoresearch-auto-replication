@@ -38,7 +38,6 @@ class Resources
     {
         if (!$this->pods) {
             $pods = $this->api->getManticorePods($this->getLabels());
-            Analog::log(json_encode($pods));
             if (!isset($pods['items'])) {
                 Analog::log('K8s api don\'t respond');
                 exit(1);
