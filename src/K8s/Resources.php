@@ -220,6 +220,25 @@ class Resources
         return false;
     }
 
+    /**
+     * @throws \JsonException
+     */
+    public function getPodIpAllConditions(){
+        $pods = $this->api->getManticorePods($this->getLabels());
+        if (!isset($pods['items'])) {
+            Analog::log('K8s api don\'t respond');
+            exit(1);
+        }
+
+        $ips = [];
+        foreach ($pods['items'] as $pod) {
+            if (isset($pod['status']['podIP'])) {
+                $ips[$pod['metadata']['name']] = $pod['status']['podIP'];
+            }
+        }
+
+        return $ips;
+    }
     public function wait($podName, $timeout): bool
     {
         return $this->waitUntilTime($podName, $timeout, microtime(true));
