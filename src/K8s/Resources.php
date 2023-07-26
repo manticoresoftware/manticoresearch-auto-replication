@@ -232,6 +232,10 @@ class Resources
 
         $ips = [];
         foreach ($pods['items'] as $pod) {
+            if (isset($pod['metadata']['deletionTimestamp'])){
+                continue;
+            }
+
             if (isset($pod['status']['podIP'])) {
                 $ips[$pod['metadata']['name']] = $pod['status']['podIP'];
             }
