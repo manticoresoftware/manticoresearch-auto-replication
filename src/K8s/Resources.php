@@ -4,6 +4,7 @@ namespace Core\K8s;
 
 use Analog\Analog;
 use Core\Notifications\NotificationInterface;
+use Exception;
 
 class Resources
 {
@@ -202,5 +203,69 @@ class Resources
         $parts = explode("-", $hostname);
 
         return (int)array_pop($parts);
+    }
+
+
+    private function isReady($pod): bool
+    {
+        if ($pod['status']['phase'] === 'Running' || $pod['status']['phase'] === 'Pending') {
+            if (!empty($pod['status']['conditions'])) {
+                foreach ($pod['status']['conditions'] as $condition) {
+                    if ($condition['type'] === 'Ready' && $condition['status'] === 'True') {
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
+    }
+
+    /**
+     * @throws \JsonException
+     */
+    public function getPodIpAllConditions(){
+        $pods = $this->api->getManticorePods($this->getLabels());
+        if (!isset($pods['items'])) {
+            Analog::log('K8s api don\'t respond');
+            exit(1);
+        }
+
+        $ips = [];
+        foreach ($pods['items'] as $pod) {
+            if (isset($pod['metadata']['deletionTimestamp'])){
+                continue;
+            }
+
+            if (isset($pod['status']['podIP'])) {
+                $ips[$pod['metadata']['name']] = $pod['status']['podIP'];
+            }
+        }
+
+        return $ips;
+    }
+    public function wait($podName, $timeout): bool
+    {
+        return $this->waitUntilTime($podName, $timeout, microtime(true));
+    }
+
+    private function waitUntilTime($podName, $timeout, $startTime): bool
+    {
+        if ((microtime(true) - $timeout) > $startTime) {
+            return false;
+        }
+
+        try {
+            foreach ($this->getPods() as $pod) {
+                if ($pod['metadata']['name'] === $podName && $this->isReady($pod)) {
+                    return true;
+                }
+            }
+        } catch (Exception $e) {
+            Analog::log($e->getMessage());
+        }
+
+        sleep(1);
+        $this->pods = [];
+        return $this->waitUntilTime($podName, $timeout, $startTime);
     }
 }
