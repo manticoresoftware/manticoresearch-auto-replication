@@ -33,7 +33,7 @@ class Locker
     public function unlock($exitStatus = 1): void
     {
         fclose($this->fp);
-        exit($exitStatus);
+        $this->terminate($exitStatus);
     }
 
     public function checkOptimizeLock($file, $workerPort = 9306): bool
@@ -65,5 +65,9 @@ class Locker
             throw new \http\Exception\RuntimeException("OPTIMIZE lock file is not set");
         }
         file_put_contents($this->optimizeLockFile, $ip);
+    }
+
+    protected function terminate($exitStatus){
+        exit($exitStatus);
     }
 }

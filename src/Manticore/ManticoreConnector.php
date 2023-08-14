@@ -8,7 +8,7 @@ use mysqli;
 class ManticoreConnector
 {
 
-    protected int $maxAttempts;
+    protected int $maxAttempts = 0;
     protected mysqli $connection;
     protected string $clusterName = "";
     protected string $rtInclude;
