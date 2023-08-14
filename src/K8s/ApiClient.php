@@ -41,7 +41,7 @@ class ApiClient
         ];
 
     private string $bearer;
-    private Client $httpClient;
+    protected Client $httpClient;
     private string $userAgent;
 
     private string $namespace;
@@ -147,22 +147,30 @@ class ApiClient
     }
 
 
-    private function getBearer(): string
+    protected function getBearerPath(): string
     {
-        $bearerFile = '/var/run/secrets/kubernetes.io/serviceaccount/token';
-        if (file_exists($bearerFile)) {
-            return file_get_contents($bearerFile);
-        }
+        return '/var/run/secrets/kubernetes.io/serviceaccount/token';
+    }
 
-        return false;
+    protected function getNamespacePath(): string
+    {
+        return  '/var/run/secrets/kubernetes.io/serviceaccount/namespace';
+    }
+
+    protected function getBearer()
+    {
+        return $this->readFile($this->getBearerPath());
     }
 
 
-    private function getNamespace()
+    protected function getNamespace()
     {
-        $bearerFile = '/var/run/secrets/kubernetes.io/serviceaccount/namespace';
-        if (file_exists($bearerFile)) {
-            return file_get_contents($bearerFile);
+        return $this->readFile($this->getNamespacePath());
+    }
+
+    private function readFile($filename){
+        if (file_exists($filename)) {
+            return file_get_contents($filename);
         }
 
         return false;
@@ -184,10 +192,16 @@ class ApiClient
                 Analog::log(Psr7\Message::toString($e->getResponse()));
             }
 
-            exit(1);
+            $this->terminate(1);
         } catch (GuzzleException $e) {
             Analog::log($e->getMessage());
-            exit(1);
+            $this->terminate(1);
         }
+        return null;
     }
+
+    protected function terminate($exitStatus){
+        exit($exitStatus);
+    }
+
 }
