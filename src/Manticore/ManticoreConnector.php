@@ -15,33 +15,38 @@ class ManticoreConnector
     protected $fields;
     protected array $searchdStatus = [];
 
-    public function __construct($host, $port, $clusterName, $maxAttempts)
+    public function __construct($host, $port, $clusterName, $maxAttempts, $connection = null)
     {
-        $this->setMaxAttempts($maxAttempts);
+        if ($connection === null){
+            $this->setMaxAttempts($maxAttempts);
 
-        if (isset($clusterName)) {
-            $this->clusterName = $clusterName.'_cluster';
-        }
-
-        mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
-
-        for ($i = 0; $i <= $this->maxAttempts; $i++) {
-            try {
-                $this->connection = new mysqli($host.':'.$port, '', '', '');
-
-                if ( ! $this->connection->connect_errno) {
-                    break;
-                }
-            } catch (\Exception $exception) {
-                Analog::error("Manticore connect exception ($host:$port) ".$exception->getMessage());
+            if (isset($clusterName)) {
+                $this->clusterName = $clusterName.'_cluster';
             }
 
+            mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
 
-            sleep(1);
-        }
+            for ($i = 0; $i <= $this->maxAttempts; $i++) {
+                try {
+                    $this->connection = new mysqli($host.':'.$port, '', '', '');
 
-        if ($this->connection == null || $this->connection->connect_errno) {
-            throw new \RuntimeException("Can't connect to Manticore at ".$host.':'.$port);
+                    if ( ! $this->connection->connect_errno) {
+                        break;
+                    }
+                } catch (\Exception $exception) {
+                    Analog::error("Manticore connect exception ($host:$port) ".$exception->getMessage());
+                }
+
+
+                sleep(1);
+            }
+
+            if ($this->connection == null || $this->connection->connect_errno) {
+                throw new \RuntimeException("Can't connect to Manticore at ".$host.':'.$port);
+            }
+        } else {
+            // For unit tests
+            $this->connection = $connection;
         }
     }
 

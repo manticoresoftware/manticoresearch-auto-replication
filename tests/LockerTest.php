@@ -99,13 +99,12 @@ class LockerTest extends TestCase
 
         $this->assertFileExists(OPTIMIZE_FILE);
 
+        $mysqlMock = $this->getMockBuilder(mysqli::class)->getMock();
 
         $mock = $this
             ->getMockBuilder(ManticoreConnector::class)
-            ->setConstructorArgs([$ip, $workerPort, null, -1])
+            ->setConstructorArgs([$ip, $workerPort, null, -1, $mysqlMock])
             ->getMock();
-
-        $mock->expects($this->any())->method('setMaxAttempts');
 
         $mock->expects($this->once())
             ->method('showThreads')
