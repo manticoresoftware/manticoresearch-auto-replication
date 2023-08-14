@@ -15,9 +15,9 @@ class ManticoreConnector
     protected $fields;
     protected array $searchdStatus = [];
 
-    public function __construct($host, $port, $clusterName, $maxAttempts, $connection = null)
+    public function __construct($host, $port, $clusterName, $maxAttempts, $connect = true)
     {
-        if ($connection === null){
+        if ($connect){
             $this->setMaxAttempts($maxAttempts);
 
             if (isset($clusterName)) {
@@ -44,9 +44,6 @@ class ManticoreConnector
             if ($this->connection == null || $this->connection->connect_errno) {
                 throw new \RuntimeException("Can't connect to Manticore at ".$host.':'.$port);
             }
-        } else {
-            // For unit tests
-            $this->connection = $connection;
         }
     }
 
