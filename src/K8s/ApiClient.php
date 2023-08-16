@@ -42,7 +42,8 @@ class ApiClient
 
     private string $bearer;
     protected Client $httpClient;
-    private string $userAgent;
+    private string $userAgent = 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 '.
+    '(KHTML, like Gecko) Chrome/71.0.3578.98 Safari/537.36';
 
     private string $namespace;
 
@@ -51,9 +52,6 @@ class ApiClient
     public function __construct()
     {
         $this->bearer    = $this->getBearer();
-        $this->userAgent = 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 '.
-            '(KHTML, like Gecko) Chrome/71.0.3578.98 Safari/537.36';
-
         $this->namespace  = $this->getNamespace();
         $this->httpClient = new Client();
     }
@@ -166,6 +164,11 @@ class ApiClient
     protected function getNamespace()
     {
         return $this->readFile($this->getNamespacePath());
+    }
+
+    protected function getUserAgent(): string
+    {
+        return $this->userAgent;
     }
 
     private function readFile($filename){
