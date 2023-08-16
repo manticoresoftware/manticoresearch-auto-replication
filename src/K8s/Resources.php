@@ -15,17 +15,17 @@ class Resources
 
     public function __construct(ApiClient $api, array $labels, NotificationInterface $notification)
     {
-        $this->setLabels($labels);
+        $this->labels = $labels;
         $this->api = $api;
         $this->notification = $notification;
     }
 
-    private function setLabels(array $labels): void
+    protected function getUnfilteredPods(): array
     {
-        $this->labels = $labels;
+        return $this->pods;
     }
 
-    private function getLabels(): array
+    protected function getLabels(): array
     {
         return $this->labels;
     }
@@ -40,7 +40,7 @@ class Resources
             $pods = $this->api->getManticorePods($this->getLabels());
             if (!isset($pods['items'])) {
                 Analog::log('K8s api don\'t respond');
-                exit(1);
+                $this->terminate(1);
             }
 
             foreach ($pods['items'] as $pod) {
@@ -223,11 +223,12 @@ class Resources
     /**
      * @throws \JsonException
      */
-    public function getPodIpAllConditions(){
+    public function getPodIpAllConditions(): array
+    {
         $pods = $this->api->getManticorePods($this->getLabels());
         if (!isset($pods['items'])) {
             Analog::log('K8s api don\'t respond');
-            exit(1);
+            $this->terminate(1);
         }
 
         $ips = [];
@@ -267,5 +268,9 @@ class Resources
         sleep(1);
         $this->pods = [];
         return $this->waitUntilTime($podName, $timeout, $startTime);
+    }
+
+    protected function terminate($status){
+        exit($status);
     }
 }
