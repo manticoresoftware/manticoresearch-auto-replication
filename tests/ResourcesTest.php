@@ -1,12 +1,8 @@
 <?php
 
-use Core\Cache\Cache;
 use Core\K8s\ApiClient;
 use Core\K8s\Resources;
 use Core\Notifications\NotificationStub;
-use GuzzleHttp\Client;
-use GuzzleHttp\Exception\RequestException;
-use GuzzleHttp\Psr7\Response;
 use PHPUnit\Framework\TestCase;
 
 class ResourcesTest extends TestCase

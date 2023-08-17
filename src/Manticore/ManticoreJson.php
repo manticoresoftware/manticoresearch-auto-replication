@@ -15,21 +15,21 @@ class ManticoreJson
     public function __construct($clusterName, $binaryPort = 9312)
     {
         $this->clusterName = $clusterName;
-        $this->binaryPort  = $binaryPort;
+        $this->binaryPort = $binaryPort;
 
         if (defined('DEV')) {
             $this->conf = [
 
                 "clusters" => [
                     "m_cluster" => [
-                        "nodes"   => "192.168.0.1:".$this->binaryPort.",92.168.0.1:".$this->binaryPort,
+                        "nodes" => "192.168.0.1:".$this->binaryPort.",92.168.0.1:".$this->binaryPort,
                         "options" => "",
                         "indexes" => ["pq", "tests"],
                     ],
                 ],
 
                 "indexes" => [
-                    "pq"    => [
+                    "pq" => [
                         "type" => "percolate",
                         "path" => "pq",
                     ],
@@ -43,18 +43,7 @@ class ManticoreJson
             $this->path = '/tmp/manticore.json';
         } else {
             $this->path = '/var/lib/manticore/manticore.json';
-
-            if (file_exists($this->path)) {
-                try {
-                    $manticoreJson = file_get_contents($this->path);
-                    Analog::debug("Manticore json content: ".$manticoreJson);
-                    $this->conf = json_decode($manticoreJson, true);
-                } catch (\Exception $exception) {
-                    $this->conf = [];
-                }
-            } else {
-                $this->conf = [];
-            }
+            $this->conf = $this->readConf();
         }
     }
 
@@ -66,7 +55,7 @@ class ManticoreJson
 
     public function getClusterNodes()
     {
-        if ( ! isset($this->conf['clusters'][$this->clusterName]['nodes'])) {
+        if (!isset($this->conf['clusters'][$this->clusterName]['nodes'])) {
             return [];
         }
         $nodes = $this->conf['clusters'][$this->clusterName]['nodes'];
@@ -80,11 +69,11 @@ class ManticoreJson
         if ($nodesList !== []) {
             $newNodes = implode(',', $nodesList);
 
-            if ( ! isset($this->conf['clusters'][$this->clusterName]['nodes'])
+            if (!isset($this->conf['clusters'][$this->clusterName]['nodes'])
                 || $newNodes !== $this->conf['clusters'][$this->clusterName]['nodes']
             ) {
                 $this->conf['clusters'][$this->clusterName]['nodes'] = $newNodes;
-                $this->save();
+                $this->saveConf();
             }
         }
     }
@@ -101,7 +90,7 @@ class ManticoreJson
 
     public function checkNodesAvailability(Resources $resources, $port, $shortClusterName, $attempts): void
     {
-        $nodes          = $resources->getPodsFullHostnames();
+        $nodes = $resources->getPodsFullHostnames();
         $availableNodes = [];
 
         $skipSelf = true;
@@ -119,7 +108,7 @@ class ManticoreJson
 
             try {
                 $connection = new ManticoreConnector($hostname, $port, $shortClusterName, $attempts);
-                if ( ! $connection->checkClusterName()) {
+                if (!$connection->checkClusterName()) {
                     Analog::log("Cluster name mismatch at $hostname");
                     continue;
                 }
@@ -148,19 +137,33 @@ class ManticoreJson
                 if (!$connection->isClusterPrimary()) {
                     $nonPrimaryNodesCount++;
                 }
-
             } catch (\RuntimeException $exception) {
                 Analog::log("Node at $ip no more available\n".$exception->getMessage());
             }
         }
 
-        return (count($nodes)-1 === $nonPrimaryNodesCount);
+        return (count($nodes) - 1 === $nonPrimaryNodesCount);
+    }
+
+    protected function readConf(): array
+    {
+        if (file_exists($this->path)) {
+            try {
+                $manticoreJson = file_get_contents($this->path);
+                Analog::debug("Manticore json content: ".$manticoreJson);
+                return json_decode($manticoreJson, true);
+            } catch (\Exception $exception) {
+                return [];
+            }
+        } else {
+            return [];
+        }
     }
 
     /**
      * @throws \JsonException
      */
-    protected function save(): void
+    protected function saveConf(): void
     {
         Analog::log("Save manticore.json ".json_encode($this->conf));
         file_put_contents($this->path, json_encode($this->conf, JSON_THROW_ON_ERROR | JSON_PRETTY_PRINT));

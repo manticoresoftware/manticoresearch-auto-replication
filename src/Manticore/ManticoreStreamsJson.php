@@ -41,7 +41,7 @@ class ManticoreStreamsJson extends ManticoreJson
             }
 
             if ($updated) {
-                $this->save();
+                $this->saveConf();
             }
         }
     }

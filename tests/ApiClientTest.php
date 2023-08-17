@@ -1,9 +1,7 @@
 <?php
 
-use Core\Cache\Cache;
 use Core\K8s\ApiClient;
 use GuzzleHttp\Client;
-use GuzzleHttp\Exception\RequestException;
 use GuzzleHttp\Psr7\Response;
 use PHPUnit\Framework\TestCase;
 
