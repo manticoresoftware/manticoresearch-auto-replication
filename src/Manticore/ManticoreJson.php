@@ -107,7 +107,7 @@ class ManticoreJson
 
 
             try {
-                $connection = new ManticoreConnector($hostname, $port, $shortClusterName, $attempts);
+                $connection = $this->getManticoreConnection($hostname, $port, $shortClusterName, $attempts);
                 if (!$connection->checkClusterName()) {
                     Analog::log("Cluster name mismatch at $hostname");
                     continue;
@@ -145,6 +145,10 @@ class ManticoreJson
         return (count($nodes) - 1 === $nonPrimaryNodesCount);
     }
 
+    protected function getManticoreConnection($hostname, $port, $shortClusterName, $attempts): ManticoreConnector
+    {
+        return new ManticoreConnector($hostname, $port, $shortClusterName, $attempts);
+    }
     protected function readConf(): array
     {
         if (file_exists($this->path)) {

@@ -1,19 +1,28 @@
 <?php
 
+use Core\K8s\Resources;
+use Core\Manticore\ManticoreConnector;
 use Core\Manticore\ManticoreJson;
+use Core\Notifications\NotificationStub;
 use PHPUnit\Framework\TestCase;
 
 class ManticoreJsonTest extends TestCase
 {
 
+    private $manticoreMock;
     private function getManticoreJsonClass($conf): ManticoreJson
     {
-        return new class('m_cluster', 9312, $conf) extends ManticoreJson {
+        $this->manticoreMock = $this->getMockBuilder(ManticoreConnector::class)->setConstructorArgs(['0','9306','',-1, false])->getMock();
 
-            public function __construct($clusterName, $binaryPort, $conf)
+        return new class('m_cluster', 9312, $conf, $this->manticoreMock) extends ManticoreJson {
+
+            protected ManticoreConnector $manticoreMock;
+
+            public function __construct($clusterName, $binaryPort, $conf, $manticoreMock)
             {
                 parent::__construct($clusterName, $binaryPort);
                 $this->conf = $conf;
+                $this->manticoreMock = $manticoreMock;
             }
 
             protected function readConf(): array
@@ -23,6 +32,15 @@ class ManticoreJsonTest extends TestCase
 
             protected function saveConf(): void
             {
+            }
+
+            protected function getManticoreConnection(
+                $hostname,
+                $port,
+                $shortClusterName,
+                $attempts
+            ): ManticoreConnector {
+                return $this->manticoreMock;
             }
         };
     }
@@ -105,6 +123,39 @@ class ManticoreJsonTest extends TestCase
             $manticoreJson->getConf()
         );
     }
+
+    /**
+     * @test
+     *
+     * @return void
+     */
+
+    public function checkNodesAvailability(){
+        $manticoreJson = $this->getManticoreJsonClass($this->getConf());
+        $resourceMock = $this->getMockBuilder(Resources::class)
+            ->setConstructorArgs([new \Core\K8s\ApiClient(), [], new NotificationStub()])->getMock();
+
+        $this->manticoreMock->method('checkClusterName')->willReturn(true, false, true);
+
+        $newNodesList = [
+            'manticore-helm-manticoresearch-worker-0.manticore-helm-manticoresearch-worker-svc.manticore-helm.svc.cluster.local',
+            'manticore-helm-manticoresearch-worker-1.manticore-helm-manticoresearch-worker-svc.manticore-helm.svc.cluster.local',
+            'manticore-helm-manticoresearch-worker-2.manticore-helm-manticoresearch-worker-svc.manticore-helm.svc.cluster.local'
+        ];
+        $resourceMock->method('getPodsFullHostnames')
+            ->willReturn($newNodesList);
+
+        $manticoreJson->checkNodesAvailability($resourceMock, 9306, 'm1', 1);
+        $conf = $manticoreJson->getConf();
+
+        unset($newNodesList[1]);
+        foreach ($newNodesList as $k=> $node){
+            $newNodesList[$k] .= ':9312';
+        }
+        $this->assertSame(implode(',', $newNodesList), $conf['clusters']['m_cluster']['nodes']);
+    }
+
+
 
     private function getConf(): array
     {
