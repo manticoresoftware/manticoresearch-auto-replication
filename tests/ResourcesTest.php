@@ -220,6 +220,25 @@ class ResourcesTest extends TestCase
      * @return void
      * @throws JsonException
      */
+    public function getOldestActivePodThrowExceptionIfOnePod()
+    {
+        $defaultAnswer = $this->getDefaultK8sAnswer();
+        unset($defaultAnswer['items'][0], $defaultAnswer['items'][2], $defaultAnswer['items'][3]);
+        $this->mock->method('getManticorePods')
+            ->with([])
+            ->willReturn($defaultAnswer);
+
+        $this->expectException(RuntimeException::class);
+        $oldest = $this->resources->getOldestActivePodName();
+
+    }
+
+
+    /**
+     * @test
+     * @return void
+     * @throws JsonException
+     */
     public function getPodsIp()
     {
         $defaultAnswer = $this->getDefaultK8sAnswer();
@@ -373,6 +392,23 @@ class ResourcesTest extends TestCase
      * @test
      * @return void
      */
+    public function getPodMinAvailableReplicaThrowsExceptionIfNoMatches()
+    {
+        $defaultAnswer = $this->getDefaultK8sAnswer();
+        $defaultAnswer['items'] = [];
+
+        $this->mock->method('getManticorePods')
+            ->with([])
+            ->willReturn($defaultAnswer);
+
+        $this->expectException(RuntimeException::class);
+        $this->resources->getMinAvailableReplica();
+    }
+
+    /**
+     * @test
+     * @return void
+     */
     public function getMinReplicaName()
     {
         $this->assertSame('manticore-helm-manticoresearch-worker-0', $this->resources->getMinReplicaName());
@@ -520,8 +556,24 @@ class ResourcesTest extends TestCase
      * @return void
      * @throws JsonException
      */
+    public function getPodIpAllConditionsThrowErrorOnEmptyResponse()
+    {
+        $defaultAnswer = $this->getDefaultK8sAnswer();
+        unset($defaultAnswer['items']);
+        $this->mock->method('getManticorePods')
+            ->with([])
+            ->willReturn($defaultAnswer);
 
-    public function waitUntillPodReady()
+        $this->expectException(RuntimeException::class);
+        $this->resources->getPodIpAllConditions();
+    }
+
+    /**
+     * @test
+     * @return void
+     */
+
+    public function waitUntilPodReady()
     {
         $defaultAnswer = $this->getDefaultK8sAnswer();
         $readyResponse = $defaultAnswer;
@@ -543,7 +595,6 @@ class ResourcesTest extends TestCase
     /**
      * @test
      * @return void
-     * @throws JsonException
      */
 
     public function methodWillWaitUntilTimeout()
@@ -562,6 +613,26 @@ class ResourcesTest extends TestCase
         $this->assertGreaterThan(1, $endTime - $startTime);
     }
 
+    /**
+     * @test
+     * @return void
+     * @throws JsonException
+     */
+    public function devMethodsReturnEmptyArrayInDevMode()
+    {
+        $this->defineDev();
+        $this->assertSame([], $this->resources->getPodsIp());
+        $this->assertSame([], $this->resources->getPodsHostnames());
+        $this->assertSame([], $this->resources->getPodsFullHostnames());
+        $this->assertSame(0, $this->resources->getCurrentReplica());
+
+    }
+
+    private function defineDev(){
+        if (!defined("DEV")){
+            define("DEV", true);
+        }
+    }
 
     private function getDefaultK8sAnswer(): array
     {
@@ -810,5 +881,3 @@ ZXN0RWZmb3J0IiB9IH0gXX0=';
     }
 
 }
-
-

@@ -20,11 +20,6 @@ class Resources
         $this->notification = $notification;
     }
 
-    protected function getUnfilteredPods(): array
-    {
-        return $this->pods;
-    }
-
     protected function getLabels(): array
     {
         return $this->labels;
