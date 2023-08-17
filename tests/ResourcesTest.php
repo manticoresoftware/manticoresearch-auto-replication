@@ -33,6 +33,16 @@ class ResourcesTest extends TestCase
             {
                 throw new RuntimeException("Exit: ".$status);
             }
+
+            protected function getHostName(): string
+            {
+                return 'manticore-helm-manticoresearch-worker-0';
+            }
+
+            protected function getHostByName($hostname): string
+            {
+                return '192.168.0.1';
+            }
         };
     }
 
@@ -43,6 +53,70 @@ class ResourcesTest extends TestCase
      * @throws JsonException
      */
     public function getGetPodsReturnsArrayOfPods()
+    {
+        $defaultAnswer = $this->getDefaultK8sAnswer();
+        $this->mock->method('getManticorePods')
+            ->with([])
+            ->willReturn($defaultAnswer);
+
+        $pods = $this->resources->getPods();
+
+        $this->assertCount(4, $pods);
+
+        $names = [];
+        foreach ($pods as $pod) {
+            $names[] = $pod['metadata']['name'];
+        }
+
+        $this->assertSame([
+                              'manticore-helm-manticoresearch-balancer-6d9fcc96c5-fkvhc',
+                              'manticore-helm-manticoresearch-worker-0',
+                              'manticore-helm-manticoresearch-worker-1',
+                              'manticore-helm-manticoresearch-worker-2'
+                          ], $names);
+    }
+
+    /**
+     * @test
+     *
+     * @return void
+     * @throws JsonException
+     */
+
+    public function getGetPodsWithNonReadyPhase()
+    {
+        $defaultAnswer = $this->getDefaultK8sAnswer();
+
+        // Replace Ready phase of balancer to be sure about correct filtering
+        $defaultAnswer['items'][0]['status']['phase'] = 'Not Ready';
+        $this->mock->method('getManticorePods')
+            ->with([])
+            ->willReturn($defaultAnswer);
+
+        $pods = $this->resources->getPods();
+
+        $this->assertCount(3, $pods);
+
+        $names = [];
+        foreach ($pods as $pod) {
+            $names[] = $pod['metadata']['name'];
+        }
+
+        $this->assertSame([
+                              'manticore-helm-manticoresearch-worker-0',
+                              'manticore-helm-manticoresearch-worker-1',
+                              'manticore-helm-manticoresearch-worker-2'
+                          ], $names);
+    }
+
+    /**
+     * @test
+     *
+     * @return void
+     * @throws JsonException
+     */
+
+    public function getGetPodsWithoutReadyCondition()
     {
         $defaultAnswer = $this->getDefaultK8sAnswer();
 
@@ -68,8 +142,230 @@ class ResourcesTest extends TestCase
                           ], $names);
     }
 
+    /**
+     * @test
+     * @return void
+     * @throws JsonException
+     */
+    public function getPodTerminatesInCaseNoPods()
+    {
+        $this->mock->method('getManticorePods')
+            ->with([])
+            ->willReturn(['api' => 'v1']);
+
+        $this->expectException(RuntimeException::class);
+
+        $this->resources->getPods();
+    }
+
+    /**
+     * @test
+     * @return void
+     * @throws JsonException
+     */
+    public function getActivePodsCount()
+    {
+        $defaultAnswer = $this->getDefaultK8sAnswer();
+        $this->mock->method('getManticorePods')
+            ->with([])
+            ->willReturn($defaultAnswer);
+
+        $pods = $this->resources->getActivePodsCount();
+
+        $this->assertSame(4, $pods);
+    }
+
+    /**
+     * @test
+     * @return void
+     * @throws JsonException
+     */
+    public function getOldestActivePodReturnsOldestPod()
+    {
+        $defaultAnswer = $this->getDefaultK8sAnswer();
+        unset($defaultAnswer['items'][0]);
+        $this->mock->method('getManticorePods')
+            ->with([])
+            ->willReturn($defaultAnswer);
+
+        $oldest = $this->resources->getOldestActivePodName();
+        $this->assertSame('manticore-helm-manticoresearch-worker-1', $oldest);
+    }
+
+    /**
+     * @test
+     * @return void
+     * @throws JsonException
+     */
+    public function getOldestActivePodReturnsOldestPodNoSelfSkip()
+    {
+        $defaultAnswer = $this->getDefaultK8sAnswer();
+        unset($defaultAnswer['items'][0]);
+        $this->mock->method('getManticorePods')
+            ->with([])
+            ->willReturn($defaultAnswer);
+
+        $oldest = $this->resources->getOldestActivePodName(false);
+        $this->assertSame('manticore-helm-manticoresearch-worker-0', $oldest);
+    }
+
+
+    /**
+     * @test
+     * @return void
+     * @throws JsonException
+     */
+    public function getPodsIp()
+    {
+        $defaultAnswer = $this->getDefaultK8sAnswer();
+
+        $this->mock->method('getManticorePods')
+            ->with([])
+            ->willReturn($defaultAnswer);
+
+        $this->assertSame([
+                              'manticore-helm-manticoresearch-balancer-6d9fcc96c5-fkvhc' => '10.42.2.101',
+                              'manticore-helm-manticoresearch-worker-0' => '10.42.2.115',
+                              'manticore-helm-manticoresearch-worker-1' => '10.42.6.111',
+                              'manticore-helm-manticoresearch-worker-2' => '10.42.6.146'
+                          ],
+                          $this->resources->getPodsIp());
+    }
+
+    /**
+     * @test
+     * @return void
+     * @throws JsonException
+     */
+    public function getPodsIpFilterPhase()
+    {
+        $defaultAnswer = $this->getDefaultK8sAnswer();
+
+        $defaultAnswer['items'][2]['status']['phase'] = 'Not Ready';
+        $this->mock->method('getManticorePods')
+            ->with([])
+            ->willReturn($defaultAnswer);
+
+        $ips = $this->resources->getPodsIp();
+        $this->assertSame([
+                              'manticore-helm-manticoresearch-balancer-6d9fcc96c5-fkvhc' => '10.42.2.101',
+                              'manticore-helm-manticoresearch-worker-0' => '10.42.2.115',
+                              'manticore-helm-manticoresearch-worker-2' => '10.42.6.146'
+                          ],
+                          $ips);
+    }
+
+
+    /**
+     * @test
+     * @return void
+     * @throws JsonException
+     */
+    public function getPodsIpFilterNoIpSelfHost()
+    {
+        $defaultAnswer = $this->getDefaultK8sAnswer();
+
+        unset($defaultAnswer['items'][1]['status']['podIP']);
+        $this->mock->method('getManticorePods')
+            ->with([])
+            ->willReturn($defaultAnswer);
+
+        $ips = $this->resources->getPodsIp();
+        $this->assertSame([
+                              'manticore-helm-manticoresearch-balancer-6d9fcc96c5-fkvhc' => '10.42.2.101',
+                              'manticore-helm-manticoresearch-worker-0' => '192.168.0.1',
+                              'manticore-helm-manticoresearch-worker-1' => '10.42.6.111',
+                              'manticore-helm-manticoresearch-worker-2' => '10.42.6.146'
+                          ],
+                          $ips);
+    }
+
+
+    /**
+     * @test
+     * @return void
+     * @throws JsonException
+     */
+    public function getPodHostnames()
+    {
+        $defaultAnswer = $this->getDefaultK8sAnswer();
+
+        $this->mock->method('getManticorePods')
+            ->with([])
+            ->willReturn($defaultAnswer);
+
+        $this->assertSame([
+                              'manticore-helm-manticoresearch-balancer-6d9fcc96c5-fkvhc',
+                              'manticore-helm-manticoresearch-worker-0',
+                              'manticore-helm-manticoresearch-worker-1',
+                              'manticore-helm-manticoresearch-worker-2'
+                          ],
+                          $this->resources->getPodsHostnames());
+    }
+
+
+    /**
+     * @test
+     * @return void
+     * @throws JsonException
+     */
+    public function getPodFullHostnames()
+    {
+        $defaultAnswer = $this->getDefaultK8sAnswer();
+
+        $this->mock->method('getManticorePods')
+            ->with([])
+            ->willReturn($defaultAnswer);
+
+        $this->assertSame([
+                              'manticore-helm-manticoresearch-balancer-6d9fcc96c5-fkvhc..manticore-helm.svc.cluster.local',
+                              'manticore-helm-manticoresearch-worker-0.manticore-helm-manticoresearch-worker-svc.manticore-helm.svc.cluster.local',
+                              'manticore-helm-manticoresearch-worker-1.manticore-helm-manticoresearch-worker-svc.manticore-helm.svc.cluster.local',
+                              'manticore-helm-manticoresearch-worker-2.manticore-helm-manticoresearch-worker-svc.manticore-helm.svc.cluster.local'
+                          ],
+                          $this->resources->getPodsFullHostnames());
+    }
+
+
+    /**
+     * @test
+     * @return void
+     * @throws JsonException
+     */
+    public function getPodMinAvailableReplica()
+    {
+        $defaultAnswer = $this->getDefaultK8sAnswer();
+        unset($defaultAnswer['items'][0]);
+        $this->mock->method('getManticorePods')
+            ->with([])
+            ->willReturn($defaultAnswer);
+
+        $this->assertSame('manticore-helm-manticoresearch-worker-1',
+                          $this->resources->getMinAvailableReplica());
+    }
+
+    /**
+     * @test
+     * @return void
+     * @throws JsonException
+     */
+    public function getPodMinAvailableReplicaNotSkipSelf()
+    {
+        $defaultAnswer = $this->getDefaultK8sAnswer();
+        unset($defaultAnswer['items'][0]);
+        $this->mock->method('getManticorePods')
+            ->with([])
+            ->willReturn($defaultAnswer);
+
+        $this->assertSame('manticore-helm-manticoresearch-worker-0',
+                          $this->resources->getMinAvailableReplica(false));
+    }
+
+
+
     private function getDefaultK8sAnswer(): array
     {
+        // echo wordwrap(base64_encode($apiResponse), 120, "\n", true);
         $answer =
             'eyJraW5kIjogIlBvZExpc3QiLCAiYXBpVmVyc2lvbiI6ICJ2MSIsICJtZXRhZGF0YSI6IHsgInJlc291cmNlVmVyc2lvbiI6ICI5Nzc3NzA5IiB9LCAKICAg
 ICAgICAiaXRlbXMiOiBbIHsgIm1ldGFkYXRhIjogeyAibmFtZSI6ICJtYW50aWNvcmUtaGVsbS1tYW50aWNvcmVzZWFyY2gtYmFsYW5jZXItNmQ5ZmNjOTZj

@@ -84,7 +84,7 @@ class Resources
      */
     public function getOldestActivePodName($skipSelf = true)
     {
-        $currentPodHostname = gethostname();
+        $currentPodHostname = $this->getHostName();
 
         $pods = [];
         foreach ($this->getPods() as $pod) {
@@ -101,6 +101,10 @@ class Resources
         return $pods[min(array_keys($pods))];
     }
 
+    /**
+     * @return array
+     * @throws \JsonException
+     */
     public function getPodsIp(): array
     {
         if (defined('DEV') && DEV === true) {
@@ -109,16 +113,14 @@ class Resources
         $ips = [];
         $this->getPods();
 
-        $hostname = gethostname();
+        $hostname = $this->getHostName();
         foreach ($this->pods as $pod) {
-            if ($pod['status']['phase'] === 'Running' || $pod['status']['phase'] === 'Pending') {
-                if (isset($pod['status']['podIP'])) {
-                    $ips[$pod['metadata']['name']] = $pod['status']['podIP'];
-                } elseif ($pod['metadata']['name'] === $hostname) {
-                    $selfIp = getHostByName($hostname);
-                    if (!empty($selfIp)) {
-                        $ips[$hostname] = $selfIp;
-                    }
+            if (isset($pod['status']['podIP'])) {
+                $ips[$pod['metadata']['name']] = $pod['status']['podIP'];
+            } elseif ($pod['metadata']['name'] === $hostname) {
+                $selfIp = $this->getHostByName($hostname);
+                if (!empty($selfIp)) {
+                    $ips[$hostname] = $selfIp;
                 }
             }
         }
@@ -126,6 +128,9 @@ class Resources
         return $ips;
     }
 
+    /**
+     * @throws \JsonException
+     */
     public function getPodsHostnames(): array
     {
         if (defined('DEV') && DEV === true) {
@@ -135,14 +140,15 @@ class Resources
         $this->getPods();
 
         foreach ($this->pods as $pod) {
-            if ($pod['status']['phase'] === 'Running' || $pod['status']['phase'] === 'Pending') {
-                $hostnames[] = $pod['metadata']['name'];
-            }
+            $hostnames[] = $pod['metadata']['name'];
         }
 
         return $hostnames;
     }
 
+    /**
+     * @throws \JsonException
+     */
     public function getPodsFullHostnames(): array
     {
         if (defined('DEV') && DEV === true) {
@@ -152,12 +158,10 @@ class Resources
         $this->getPods();
 
         foreach ($this->pods as $pod) {
-            if ($pod['status']['phase'] === 'Running' || $pod['status']['phase'] === 'Pending') {
-                $hostnames[] = $pod['metadata']['name'].
-                    '.'.$pod['spec']['subdomain'].
-                    '.'.$pod['metadata']['namespace'].
-                    '.svc.cluster.local';
-            }
+            $hostnames[] = $pod['metadata']['name'].
+                '.'.$pod['spec']['subdomain'].
+                '.'.$pod['metadata']['namespace'].
+                '.svc.cluster.local';
         }
 
         return $hostnames;
@@ -176,7 +180,7 @@ class Resources
 
         $min = array_shift($podsList);
 
-        if ($skipSelf && $min === gethostname()) {
+        if ($skipSelf && $min === $this->getHostName()) {
             // skip itself
             $min = array_shift($podsList);
         }
@@ -186,7 +190,7 @@ class Resources
 
     public function getMinReplicaName(): string
     {
-        $hostname = gethostname();
+        $hostname = $this->getHostName();
         $parts = explode("-", $hostname);
         array_pop($parts);
         $parts[] = 0;
@@ -199,7 +203,7 @@ class Resources
         if (defined('DEV') && DEV === true) {
             return 0;
         }
-        $hostname = gethostname();
+        $hostname = $this->getHostName();
         $parts = explode("-", $hostname);
 
         return (int)array_pop($parts);
@@ -233,7 +237,7 @@ class Resources
 
         $ips = [];
         foreach ($pods['items'] as $pod) {
-            if (isset($pod['metadata']['deletionTimestamp'])){
+            if (isset($pod['metadata']['deletionTimestamp'])) {
                 continue;
             }
 
@@ -244,6 +248,7 @@ class Resources
 
         return $ips;
     }
+
     public function wait($podName, $timeout): bool
     {
         return $this->waitUntilTime($podName, $timeout, microtime(true));
@@ -270,7 +275,29 @@ class Resources
         return $this->waitUntilTime($podName, $timeout, $startTime);
     }
 
-    protected function terminate($status){
+    /**
+     * Method exposed only for mocking
+     *
+     * @return false|string
+     */
+    protected function getHostName(): string
+    {
+        return gethostname();
+    }
+
+    /**
+     * Method exposed only for mocking
+     *
+     * @return false|string
+     */
+
+    protected function getHostByName($hostname): string
+    {
+        return gethostbyname($hostname);
+    }
+
+    protected function terminate($status)
+    {
         exit($status);
     }
 }
