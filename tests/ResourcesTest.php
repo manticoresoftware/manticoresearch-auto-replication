@@ -391,7 +391,8 @@ class ResourcesTest extends TestCase
      * @test
      * @return void
      */
-    public function isReadyCheck(){
+    public function isReadyCheck()
+    {
         $answer = $this->getDefaultK8sAnswer();
         $this->assertTrue($this->resources->isReady($answer['items'][0]));
     }
@@ -400,7 +401,8 @@ class ResourcesTest extends TestCase
      * @test
      * @return void
      */
-    public function isNotReadyBecauseOfWrongPhase(){
+    public function isNotReadyBecauseOfWrongPhase()
+    {
         $answer = $this->getDefaultK8sAnswer()['items'][0];
         $answer['status']['phase'] = 'not ready';
         $this->assertFalse($this->resources->isReady($answer));
@@ -410,7 +412,8 @@ class ResourcesTest extends TestCase
      * @test
      * @return void
      */
-    public function isNotReadyBecauseOfAbsentReadyCondition(){
+    public function isNotReadyBecauseOfAbsentReadyCondition()
+    {
         $answer = $this->getDefaultK8sAnswer()['items'][0];
         unset($answer['status']['conditions'][1]);
         $this->assertFalse($this->resources->isReady($answer));
@@ -510,6 +513,25 @@ class ResourcesTest extends TestCase
             ],
             $this->resources->getPodIpAllConditions()
         );
+    }
+
+    public function testWait()
+    {
+        $defaultAnswer = $this->getDefaultK8sAnswer();
+        $readyResponse = $defaultAnswer;
+        unset($defaultAnswer['items'][1]['status']['conditions'][1]);
+        $nonReadyResponse = $defaultAnswer;
+
+
+        $this->mock->method('getManticorePods')
+            ->with([])
+            ->willReturn($nonReadyResponse, $nonReadyResponse, $readyResponse);
+
+        $startTime = microtime(true);
+        $this->resources->wait('manticore-helm-manticoresearch-worker-0', 5);
+        $endTime = microtime(true);
+
+        $this->assertGreaterThan(2, $endTime - $startTime);
     }
 
 
