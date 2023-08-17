@@ -515,7 +515,13 @@ class ResourcesTest extends TestCase
         );
     }
 
-    public function testWait()
+    /**
+     * @test
+     * @return void
+     * @throws JsonException
+     */
+
+    public function waitUntillPodReady()
     {
         $defaultAnswer = $this->getDefaultK8sAnswer();
         $readyResponse = $defaultAnswer;
@@ -525,13 +531,35 @@ class ResourcesTest extends TestCase
 
         $this->mock->method('getManticorePods')
             ->with([])
-            ->willReturn($nonReadyResponse, $nonReadyResponse, $readyResponse);
+            ->willReturn($nonReadyResponse, $readyResponse);
 
         $startTime = microtime(true);
         $this->resources->wait('manticore-helm-manticoresearch-worker-0', 5);
         $endTime = microtime(true);
 
-        $this->assertGreaterThan(2, $endTime - $startTime);
+        $this->assertGreaterThan(1, $endTime - $startTime);
+    }
+
+    /**
+     * @test
+     * @return void
+     * @throws JsonException
+     */
+
+    public function methodWillWaitUntilTimeout()
+    {
+        $defaultAnswer = $this->getDefaultK8sAnswer();
+        unset($defaultAnswer['items'][1]['status']['conditions'][1]);
+
+        $this->mock->method('getManticorePods')
+            ->with([])
+            ->willReturn($defaultAnswer, $defaultAnswer, $defaultAnswer);
+
+        $startTime = microtime(true);
+        $this->resources->wait('manticore-helm-manticoresearch-worker-0', 1);
+        $endTime = microtime(true);
+
+        $this->assertGreaterThan(1, $endTime - $startTime);
     }
 
 
