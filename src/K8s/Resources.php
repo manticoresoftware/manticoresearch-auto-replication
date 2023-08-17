@@ -210,7 +210,7 @@ class Resources
     }
 
 
-    private function isReady($pod): bool
+    protected function isReady($pod): bool
     {
         if ($pod['status']['phase'] === 'Running' || $pod['status']['phase'] === 'Pending') {
             if (!empty($pod['status']['conditions'])) {
