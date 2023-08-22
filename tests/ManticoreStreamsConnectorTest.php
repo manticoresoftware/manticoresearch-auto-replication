@@ -6,6 +6,7 @@ use Core\Manticore\ManticoreMysqliFetcher;
 use Core\Manticore\ManticoreStreamsConnector;
 use Mockery;
 use PHPUnit\Framework\TestCase;
+use RuntimeException;
 use Tests\Traits\ManticoreConnectorTrait;
 
 class ManticoreStreamsConnectorTest extends TestCase
@@ -57,6 +58,32 @@ class ManticoreStreamsConnectorTest extends TestCase
      */
     public function connectAndCreateExistClusterNoAnyTable()
     {
+        $this->mockFetcher
+            ->shouldReceive('getConnectionError')
+            ->andReturn(false);
+
+        $result = $this->expectationsForAllTablesCreationAndAddingToCluster();
+        $this->assertTrue($result);
+    }
+
+
+    /**
+     * @test
+     *
+     * @return void
+     */
+    public function connectAndCreateExistClusterNoAnyTableConnectionError()
+    {
+        $this->mockFetcher
+            ->shouldReceive('getConnectionError')
+            ->andReturn("Connection error");
+
+        $result = $this->expectationsForAllTablesCreationAndAddingToCluster();
+        $this->assertFalse($result);
+    }
+
+    private function expectationsForAllTablesCreationAndAddingToCluster(): bool
+    {
         $answer = $this->getDefaultStatusAnswer();
 
         foreach ($answer as $k => $v) {
@@ -74,18 +101,13 @@ class ManticoreStreamsConnectorTest extends TestCase
             ->withArgs(['show tables', true])
             ->andReturn([]);
 
-        $this->mockFetcher
-            ->shouldReceive('getConnectionError')
-            ->andReturn(false);
-
         $this->expectCreateTable('pq');
         $this->expectAlterAdd('pq');
         $this->expectCreateTable('tests');
         $this->expectAlterAdd('tests');
 
-        $this->manticoreConnectorMock->setFields('json=json|text=text|url=url');
-        $result = $this->manticoreConnectorMock->connectAndCreate();
-        $this->assertTrue($result);
+        $this->setFields();
+        return $this->manticoreConnectorMock->connectAndCreate();
     }
 
 
@@ -120,7 +142,7 @@ class ManticoreStreamsConnectorTest extends TestCase
         $this->expectAlterAdd('tests');
         $this->expectCreateTable('tests');
 
-        $this->manticoreConnectorMock->setFields('json=json|text=text|url=url');
+        $this->setFields();
         $result = $this->manticoreConnectorMock->connectAndCreate();
         $this->assertTrue($result);
     }
@@ -132,6 +154,32 @@ class ManticoreStreamsConnectorTest extends TestCase
      * @return void
      */
     public function connectAndCreateExistClusterButAllTablesNotInCluster()
+    {
+        $this->mockFetcher
+            ->shouldReceive('getConnectionError')
+            ->andReturn(false);
+
+        $result = $this->expectAddAllTablesToCluster();
+        $this->assertTrue($result);
+    }
+
+
+    /**
+     * @test
+     *
+     * @return void
+     */
+    public function connectAndCreateExistClusterButAllTablesNotInClusterErrorConnection()
+    {
+        $this->mockFetcher
+            ->shouldReceive('getConnectionError')
+            ->andReturn(true);
+
+        $result = $this->expectAddAllTablesToCluster();
+        $this->assertFalse($result);
+    }
+
+    private function expectAddAllTablesToCluster(): bool
     {
         $answer = $this->getDefaultStatusAnswer();
 
@@ -153,16 +201,11 @@ class ManticoreStreamsConnectorTest extends TestCase
                             ['Index' => 'tests', 'Type' => 'rt'],
                         ]);
 
-        $this->mockFetcher
-            ->shouldReceive('getConnectionError')
-            ->andReturn(false);
-
         $this->expectAlterAdd('pq');
         $this->expectAlterAdd('tests');
 
-        $this->manticoreConnectorMock->setFields('json=json|text=text|url=url');
-        $result = $this->manticoreConnectorMock->connectAndCreate();
-        $this->assertTrue($result);
+        $this->setFields();
+        return $this->manticoreConnectorMock->connectAndCreate();
     }
 
     /**
@@ -198,7 +241,7 @@ class ManticoreStreamsConnectorTest extends TestCase
 
         $this->expectAlterAdd('pq');
 
-        $this->manticoreConnectorMock->setFields('json=json|text=text|url=url');
+        $this->setFields();
         $result = $this->manticoreConnectorMock->connectAndCreate();
         $this->assertTrue($result);
     }
@@ -210,6 +253,62 @@ class ManticoreStreamsConnectorTest extends TestCase
      * @return void
      */
     public function connectAndCreateNoCluster()
+    {
+        $this->mockFetcher
+            ->shouldReceive('getConnectionError')
+            ->andReturn(false);
+
+        $result = $this->noClusterExpectations();
+        $this->assertTrue($result);
+    }
+
+    /**
+     * @test
+     *
+     * @return void
+     */
+    public function connectAndCreateNoClusterOnClusterCreationError()
+    {
+        $this->mockFetcher
+            ->shouldReceive('getConnectionError')
+            ->andReturn("Some error");
+
+        $result = $this->noClusterExpectations();
+        $this->assertFalse($result);
+    }
+
+
+    /**
+     * @test
+     *
+     * @return void
+     */
+    public function connectAndCreateNoClusterOnTableCreationError()
+    {
+        $this->mockFetcher
+            ->shouldReceive('getConnectionError')
+            ->andReturn(false, "Some error");
+
+        $result = $this->noClusterExpectations();
+        $this->assertFalse($result);
+    }
+
+    /**
+     * @test
+     *
+     * @return void
+     */
+    public function connectAndCreateNoClusterOnAddingToClusterError()
+    {
+        $this->mockFetcher
+            ->shouldReceive('getConnectionError')
+            ->andReturn(false, false, "Some error");
+
+        $result = $this->noClusterExpectations();
+        $this->assertFalse($result);
+    }
+
+    private function noClusterExpectations(): bool
     {
         $answer = $this->getDefaultStatusAnswer();
 
@@ -233,10 +332,6 @@ class ManticoreStreamsConnectorTest extends TestCase
             ->andReturn([]);
 
         $this->mockFetcher
-            ->shouldReceive('getConnectionError')
-            ->andReturn(false);
-
-        $this->mockFetcher
             ->shouldReceive('query')
             ->withArgs(["CREATE CLUSTER m1_cluster", true])
             ->andReturn(true);
@@ -247,10 +342,45 @@ class ManticoreStreamsConnectorTest extends TestCase
         $this->expectAlterAdd('pq');
         $this->expectAlterAdd('tests');
 
-        $this->manticoreConnectorMock->setFields('json=json|text=text|url=url');
-        $result = $this->manticoreConnectorMock->connectAndCreate();
-        $this->assertTrue($result);
+        $this->setFields();
+        return $this->manticoreConnectorMock->connectAndCreate();
     }
+
+
+    /**
+     * @test
+     * @return void
+     */
+
+    public function createTableWrongTypeException(){
+        $this->expectException(RuntimeException::class);
+        $this->manticoreConnectorMock->createTable('tbl','wrongType');
+    }
+
+    /**
+     * @test
+     * @return void
+     */
+    public function createTableNoFieldsException(){
+        $this->expectException(RuntimeException::class);
+        $this->manticoreConnectorMock->createTable('tbl','rt');
+    }
+
+    /**
+     * @test
+     * @return void
+     */
+    public function createTableOnErrorReturnFalse(){
+
+        $this->mockFetcher
+            ->shouldReceive('getConnectionError')
+            ->andReturn(true);
+
+        $this->setFields();
+        $this->expectCreateTable('tests');
+        $this->assertFalse($this->manticoreConnectorMock->createTable('tests','rt'));
+    }
+
 
     private function expectCreateTable($table)
     {
@@ -274,6 +404,10 @@ class ManticoreStreamsConnectorTest extends TestCase
             ->shouldReceive('query')
             ->withArgs(["ALTER CLUSTER ".self::CLUSTER_NAME."_cluster ADD ".$table, true])
             ->andReturn(true);
+    }
+
+    private function setFields(){
+        $this->manticoreConnectorMock->setFields('json=json|text=text|url=url');
     }
 }
 
