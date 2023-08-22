@@ -70,6 +70,10 @@ class ManticoreMysqliFetcher
         return false;
     }
 
+    public function escape_string($value): string
+    {
+        return $this->connection->escape_string($value);
+    }
 
     public function getConnectionError(): string
     {
