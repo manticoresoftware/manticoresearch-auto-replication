@@ -57,7 +57,82 @@ class ManticoreStreamsConnectorTest extends TestCase
      */
     public function connectAndCreateExistClusterNoAnyTable()
     {
+        $answer = $this->getDefaultStatusAnswer();
 
+        foreach ($answer as $k => $v) {
+            if ($v['Counter'] === 'cluster_m1_cluster_indexes') {
+                $answer[$k]['Value'] = '';
+            }
+        }
+
+        $this->mockFetcher->shouldReceive('fetch')
+            ->withArgs(['show status', true])
+            ->andReturn($answer);
+
+
+        $this->mockFetcher->shouldReceive('fetch')
+            ->withArgs(['show tables', true])
+            ->andReturn([]);
+
+        $this->mockFetcher
+            ->shouldReceive('getConnectionError')
+            ->andReturn(false);
+
+        $this->expectCreateTable('pq');
+        $this->expectAlterAdd('pq');
+        $this->expectCreateTable('tests');
+        $this->expectAlterAdd('tests');
+
+        $this->manticoreConnectorMock->setFields('json=json|text=text|url=url');
+        $result = $this->manticoreConnectorMock->connectAndCreate();
+        $this->assertTrue($result);
+    }
+
+
+    /**
+     * @test
+     *
+     * @return void
+     */
+    public function connectAndCreateExistClusterAndOneTable()
+    {
+        $answer = $this->getDefaultStatusAnswer();
+
+        foreach ($answer as $k => $v) {
+            if ($v['Counter'] === 'cluster_m1_cluster_indexes') {
+                $answer[$k]['Value'] = 'pq';
+            }
+        }
+
+        $this->mockFetcher->shouldReceive('fetch')
+            ->withArgs(['show status', true])
+            ->andReturn($answer);
+
+
+        $this->mockFetcher->shouldReceive('fetch')
+            ->withArgs(['show tables', true])
+            ->andReturn([['Index' => 'pq', 'Type' => 'percolate']]);
+
+        $this->mockFetcher
+            ->shouldReceive('getConnectionError')
+            ->andReturn(false);
+
+        $this->expectAlterAdd('tests');
+        $this->expectCreateTable('tests');
+
+        $this->manticoreConnectorMock->setFields('json=json|text=text|url=url');
+        $result = $this->manticoreConnectorMock->connectAndCreate();
+        $this->assertTrue($result);
+    }
+
+
+    /**
+     * @test
+     *
+     * @return void
+     */
+    public function connectAndCreateExistClusterButAllTablesNotInCluster()
+    {
         $answer = $this->getDefaultStatusAnswer();
 
         foreach ($answer as $k => $v) {
@@ -74,9 +149,88 @@ class ManticoreStreamsConnectorTest extends TestCase
         $this->mockFetcher->shouldReceive('fetch')
             ->withArgs(['show tables', true])
             ->andReturn([
-                    //        ['Index' => 'pq', 'Type' => 'percolate'],
-                    //        ['Index' => 'tests', 'Type' => 'rt'],
+                            ['Index' => 'pq', 'Type' => 'percolate'],
+                            ['Index' => 'tests', 'Type' => 'rt'],
                         ]);
+
+        $this->mockFetcher
+            ->shouldReceive('getConnectionError')
+            ->andReturn(false);
+
+        $this->expectAlterAdd('pq');
+        $this->expectAlterAdd('tests');
+
+        $this->manticoreConnectorMock->setFields('json=json|text=text|url=url');
+        $result = $this->manticoreConnectorMock->connectAndCreate();
+        $this->assertTrue($result);
+    }
+
+    /**
+     * @test
+     *
+     * @return void
+     */
+    public function connectAndCreateExistClusterButOneTableNotInCluster()
+    {
+        $answer = $this->getDefaultStatusAnswer();
+
+        foreach ($answer as $k => $v) {
+            if ($v['Counter'] === 'cluster_m1_cluster_indexes') {
+                $answer[$k]['Value'] = 'tests';
+            }
+        }
+
+        $this->mockFetcher->shouldReceive('fetch')
+            ->withArgs(['show status', true])
+            ->andReturn($answer);
+
+
+        $this->mockFetcher->shouldReceive('fetch')
+            ->withArgs(['show tables', true])
+            ->andReturn([
+                            ['Index' => 'pq', 'Type' => 'percolate'],
+                            ['Index' => 'tests', 'Type' => 'rt'],
+                        ]);
+
+        $this->mockFetcher
+            ->shouldReceive('getConnectionError')
+            ->andReturn(false);
+
+        $this->expectAlterAdd('pq');
+
+        $this->manticoreConnectorMock->setFields('json=json|text=text|url=url');
+        $result = $this->manticoreConnectorMock->connectAndCreate();
+        $this->assertTrue($result);
+    }
+
+
+    /**
+     * @test
+     *
+     * @return void
+     */
+    public function connectAndCreateNoCluster()
+    {
+        $answer = $this->getDefaultStatusAnswer();
+
+        foreach ($answer as $k => $v) {
+            if ($v['Counter'] === 'cluster_m1_cluster_indexes') {
+                $answer[$k]['Value'] = '';
+            }
+
+            if ($v['Counter'] === 'cluster_name') {
+                $answer[$k]['Value'] = '';
+            }
+        }
+
+        $this->mockFetcher->shouldReceive('fetch')
+            ->withArgs(['show status', true])
+            ->andReturn($answer);
+
+
+        $this->mockFetcher->shouldReceive('fetch')
+            ->withArgs(['show tables', true])
+            ->andReturn([]);
 
         $this->mockFetcher
             ->shouldReceive('getConnectionError')
@@ -84,40 +238,43 @@ class ManticoreStreamsConnectorTest extends TestCase
 
         $this->mockFetcher
             ->shouldReceive('query')
-            ->withArgs(["CREATE TABLE IF NOT EXISTS pq (`invalidjson` text indexed,".
-                "`json` json,".
-                "`text` text indexed,".
-                "`url_host_path` text indexed,".
-                "`url_query` text indexed,".
-                "`url_anchor` text indexed) type='percolate' charset_table = 'cjk, non_cjk'"])
-            ->andReturn(true);
-
-        $this->mockFetcher
-            ->shouldReceive('query')
-            ->withArgs(["ALTER CLUSTER m1_cluster ADD pq", true])
+            ->withArgs(["CREATE CLUSTER m1_cluster", true])
             ->andReturn(true);
 
 
-        $this->mockFetcher
-            ->shouldReceive('query')
-            ->withArgs(["CREATE TABLE IF NOT EXISTS tests (`invalidjson` text indexed,".
-                "`json` json,".
-                "`text` text indexed,".
-                "`url_host_path` text indexed,".
-                "`url_query` text indexed,".
-                "`url_anchor` text indexed) type='rt' charset_table = 'cjk, non_cjk'"])
-            ->andReturn(true);
-
-        $this->mockFetcher
-            ->shouldReceive('query')
-            ->withArgs(["ALTER CLUSTER m1_cluster ADD tests", true])
-            ->andReturn(true);
+        $this->expectCreateTable('pq');
+        $this->expectCreateTable('tests');
+        $this->expectAlterAdd('pq');
+        $this->expectAlterAdd('tests');
 
         $this->manticoreConnectorMock->setFields('json=json|text=text|url=url');
         $result = $this->manticoreConnectorMock->connectAndCreate();
         $this->assertTrue($result);
     }
 
+    private function expectCreateTable($table)
+    {
+        $this->mockFetcher
+            ->shouldReceive('query')
+            ->withArgs([
+                           "CREATE TABLE IF NOT EXISTS $table (`invalidjson` text indexed,".
+                           "`json` json,".
+                           "`text` text indexed,".
+                           "`url_host_path` text indexed,".
+                           "`url_query` text indexed,".
+                           "`url_anchor` text indexed) type='".
+                           ManticoreStreamsConnector::INDEX_TYPES[$table]."' charset_table = 'cjk, non_cjk'"
+                       ])
+            ->andReturn(true);
+    }
+
+    private function expectAlterAdd($table)
+    {
+        $this->mockFetcher
+            ->shouldReceive('query')
+            ->withArgs(["ALTER CLUSTER ".self::CLUSTER_NAME."_cluster ADD ".$table, true])
+            ->andReturn(true);
+    }
 }
 
 

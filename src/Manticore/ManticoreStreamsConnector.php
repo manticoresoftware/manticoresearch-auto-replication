@@ -82,7 +82,7 @@ class ManticoreStreamsConnector extends ManticoreConnector
                     $errors[] = "Can't create table $indexName";
                     continue;
                 }
-                if ($this->addTableToCluster($indexName)) {
+                if (!$this->addTableToCluster($indexName)) {
                     $errors[] = "Can't add table $indexName to cluster ".$this->clusterName;
                 }
             }
