@@ -23,7 +23,15 @@ class ManticoreStreamsJson extends ManticoreJson
         $this->restoreExistingIndexes();
     }
 
-    private function restoreExistingIndexes(): void
+    /**
+     * @deprecated
+     *
+     * this method is deprecated because this error stopped happening
+     *
+     * @return void
+     * @throws \JsonException
+     */
+    protected function restoreExistingIndexes(): void
     {
         if ($this->conf !== []) {
             $updated = false;

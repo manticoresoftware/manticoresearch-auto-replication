@@ -1,5 +1,6 @@
 <?php
 
+use Core\K8s\ApiClient;
 use Core\K8s\Resources;
 use Core\Manticore\ManticoreConnector;
 use Core\Manticore\ManticoreJson;
@@ -133,7 +134,7 @@ class ManticoreJsonTest extends TestCase
     public function checkNodesAvailability(){
         $manticoreJson = $this->getManticoreJsonClass($this->getConf());
         $resourceMock = $this->getMockBuilder(Resources::class)
-            ->setConstructorArgs([new \Core\K8s\ApiClient(), [], new NotificationStub()])->getMock();
+            ->setConstructorArgs([new ApiClient(), [], new NotificationStub()])->getMock();
 
         $this->manticoreMock->method('checkClusterName')->willReturn(true, false, true);
 
@@ -155,7 +156,49 @@ class ManticoreJsonTest extends TestCase
         $this->assertSame(implode(',', $newNodesList), $conf['clusters']['m_cluster']['nodes']);
     }
 
+    /**
+     * @test
+     *
+     * @return void
+     */
+    public function isAllNodesInPrimaryState(){
+        $manticoreJson = $this->getManticoreJsonClass($this->getConf());
+        $resourceMock = $this->getMockBuilder(Resources::class)
+            ->setConstructorArgs([new ApiClient(), [], new NotificationStub()])->getMock();
 
+        $this->manticoreMock->method('isClusterPrimary')->willReturn(true, true, true);
+        $resourceMock->method('getPodsIp')
+            ->willReturn([
+                             'manticore-helm-manticoresearch-worker-0' => '10.42.2.115',
+                             'manticore-helm-manticoresearch-worker-1' => '10.42.6.111',
+                             'manticore-helm-manticoresearch-worker-2' => '10.42.6.146'
+                         ]);
+
+
+        $this->assertFalse($manticoreJson->isAllNodesNonPrimary($resourceMock, 9306));
+    }
+
+    /**
+     * @test
+     *
+     * @return void
+     */
+    public function hasNodesInNonPrimaryState(){
+        $manticoreJson = $this->getManticoreJsonClass($this->getConf());
+        $resourceMock = $this->getMockBuilder(Resources::class)
+            ->setConstructorArgs([new ApiClient(), [], new NotificationStub()])->getMock();
+
+        $this->manticoreMock->method('isClusterPrimary')->willReturn(false, false, false);
+        $resourceMock->method('getPodsIp')
+            ->willReturn([
+                             'manticore-helm-manticoresearch-worker-0' => '10.42.2.115',
+                             'manticore-helm-manticoresearch-worker-1' => '10.42.6.111',
+                             'manticore-helm-manticoresearch-worker-2' => '10.42.6.146'
+                         ]);
+
+
+        $this->assertTrue($manticoreJson->isAllNodesNonPrimary($resourceMock, 9306));
+    }
 
     private function getConf(): array
     {

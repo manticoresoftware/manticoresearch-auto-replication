@@ -131,9 +131,8 @@ class ManticoreJson
                 continue;
             }
 
-
             try {
-                $connection = new ManticoreConnector($ip, $qlPort, $this->clusterName, 60);
+                $connection =$this->getManticoreConnection($ip, $qlPort, $this->clusterName, 60);
                 if (!$connection->isClusterPrimary()) {
                     $nonPrimaryNodesCount++;
                 }
@@ -142,7 +141,7 @@ class ManticoreJson
             }
         }
 
-        return (count($nodes) - 1 === $nonPrimaryNodesCount);
+        return (count($nodes) === $nonPrimaryNodesCount);
     }
 
     protected function getManticoreConnection($hostname, $port, $shortClusterName, $attempts): ManticoreConnector
