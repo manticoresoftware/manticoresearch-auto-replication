@@ -88,29 +88,20 @@ class ManticoreConnector
 
     public function checkClusterName(): bool
     {
-        if ($this->searchdStatus === []) {
-            $this->getStatus();
-        }
-
+        $this->checkIsStatusLoaded();
         return (isset($this->searchdStatus['cluster_name'])
             && $this->searchdStatus['cluster_name'] === $this->clusterName) ?? false;
     }
 
     public function getViewNodes()
     {
-        if ($this->searchdStatus === []) {
-            $this->getStatus();
-        }
-
+        $this->checkIsStatusLoaded();
         return $this->searchdStatus['cluster_'.$this->searchdStatus['cluster_name'].'_nodes_view'] ?? false;
     }
 
     public function isClusterPrimary(): bool
     {
-        if ($this->searchdStatus === []) {
-            $this->getStatus();
-        }
-
+        $this->checkIsStatusLoaded();
         return ($this->searchdStatus['cluster_'.$this->searchdStatus['cluster_name'].'_status'] === 'primary') ?? false;
     }
 
@@ -139,12 +130,13 @@ class ManticoreConnector
         }
     }
 
-    public function getNotInClusterTables(): array
+    public function getNotInClusterTables($tables = null): array
     {
-        $tables = $this->getTables();
-        if ($this->searchdStatus === []) {
-            $this->getStatus();
+        if ($tables === null){
+            $tables = $this->getTables();
         }
+
+        $this->checkIsStatusLoaded();
 
         $clusterTables = $this->searchdStatus['cluster_'.$this->clusterName.'_indexes'];
         if ($clusterTables === '') {
@@ -246,5 +238,11 @@ class ManticoreConnector
     public function getConnectionError(): string
     {
         return $this->fetcher->getConnectionError();
+    }
+
+    protected function checkIsStatusLoaded(){
+        if ($this->searchdStatus === []) {
+            $this->getStatus();
+        }
     }
 }

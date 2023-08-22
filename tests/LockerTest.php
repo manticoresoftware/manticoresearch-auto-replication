@@ -1,5 +1,7 @@
 <?php
 
+namespace Tests;
+
 use Core\Manticore\ManticoreConnector;
 use Core\Mutex\Locker;
 use PHPUnit\Framework\TestCase;
@@ -124,11 +126,9 @@ class LockerTest extends TestCase
         $this->assertSame($ip, file_get_contents(OPTIMIZE_FILE));
 
 
-
         $lock = $locker->checkOptimizeLock(OPTIMIZE_FILE);
         $this->assertTrue($lock);
     }
-
 
 
     /**
@@ -150,7 +150,6 @@ class LockerTest extends TestCase
         $locker->setOptimizeLock('');
 
 
-
         $lock = $locker->checkOptimizeLock(OPTIMIZE_FILE);
         $this->assertFalse($lock);
         $this->assertFileDoesNotExist(OPTIMIZE_FILE);
@@ -165,16 +164,16 @@ class LockerTest extends TestCase
     }
 
 
-    private function getManticoreConnectorMock(){
+    private function getManticoreConnectorMock()
+    {
         return $this
             ->getMockBuilder(ManticoreConnector::class)
             ->setConstructorArgs(['', 0, null, -1, false])
             ->getMock();
     }
+
     private function getMockedLocker($mock): Locker
     {
-
-
         return new class('optimize', $mock) extends Locker {
             public function __construct($name, $mock)
             {

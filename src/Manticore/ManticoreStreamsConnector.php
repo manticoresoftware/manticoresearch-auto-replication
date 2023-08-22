@@ -14,27 +14,20 @@ class ManticoreStreamsConnector extends ManticoreConnector
 
     public function checkIsTablesInCluster(): bool
     {
-        $inClusterIndexes = $this->searchdStatus['cluster_' . $this->clusterName . '_indexes'];
+        $this->checkIsStatusLoaded();
 
-        if ($inClusterIndexes === "") {
+        $notInClusterTables = $this->getNotInClusterTables(self::INDEX_LIST);
+
+        if ($notInClusterTables === []) {
             return false;
         }
 
-        $inClusterIndexes = explode(",", $inClusterIndexes);
-
-        $matchesCount = 0;
-        foreach (self::INDEX_LIST as $expectedIndexName) {
-            if (in_array($expectedIndexName, $inClusterIndexes, true)) {
-                $matchesCount++;
-            }
-        }
-
-        $result = $matchesCount === count(self::INDEX_LIST);
+        $result = count($notInClusterTables) === count(self::INDEX_LIST);
 
         if ( ! $result) {
             \Analog::warning(
                 "Tables mismatch. Expected " . implode(',', self::INDEX_LIST)
-                . " found " . implode(',', $inClusterIndexes)
+                . " found " . implode(',', $notInClusterTables)
             );
         }
 

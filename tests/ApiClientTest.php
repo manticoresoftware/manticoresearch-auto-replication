@@ -1,9 +1,13 @@
 <?php
 
+namespace Tests;
+
 use Core\K8s\ApiClient;
 use GuzzleHttp\Client;
 use GuzzleHttp\Psr7\Response;
+use JsonException;
 use PHPUnit\Framework\TestCase;
+use RuntimeException;
 
 class ApiClientTest extends TestCase
 {

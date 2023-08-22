@@ -1,5 +1,7 @@
 <?php
 
+namespace Tests;
+
 use Core\K8s\ApiClient;
 use Core\K8s\Resources;
 use Core\Manticore\ManticoreJson;

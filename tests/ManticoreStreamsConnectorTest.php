@@ -1,18 +1,25 @@
 <?php
 
+namespace Tests;
+
 use Core\Manticore\ManticoreMysqliFetcher;
 use Core\Manticore\ManticoreStreamsConnector;
+use Mockery;
 use PHPUnit\Framework\TestCase;
+use Tests\Traits\ManticoreConnectorTrait;
 
 class ManticoreStreamsConnectorTest extends TestCase
 {
+    use ManticoreConnectorTrait;
+
     private const CLUSTER_NAME = 'm1';
     protected $mockFetcher;
 
     protected function setUp(): void
     {
         parent::setUp();
-        $this->manticoreConnectorMock = new class(null, null, self::CLUSTER_NAME, -1, false) extends ManticoreStreamsConnector {
+        $this->manticoreConnectorMock = new class(null, null, self::CLUSTER_NAME, -1, false) extends
+            ManticoreStreamsConnector {
             public function setFetcher(ManticoreMysqliFetcher $fetcher)
             {
                 $this->fetcher = $fetcher;
@@ -30,16 +37,12 @@ class ManticoreStreamsConnectorTest extends TestCase
 
     public function testCheckIsTablesInCluster()
     {
-        // Set up expectations and return values for mocked methods
-        $this->manticoreConnectorMock->expects($this->once())
-            ->method('getStatus')
-            ->willReturn(['cluster_yourclustername_indexes' => 'table1,table2']);
+        $this->mockFetcher->shouldReceive('fetch')
+            ->withArgs(['show status', true])
+            ->andReturn($this->getDefaultStatusAnswer());
 
-        // Call the method being tested
-        $result = $this->manticoreStreamsConnector->checkIsTablesInCluster();
-
-        // Perform assertions
-        $this->assertTrue($result);
+        $result = $this->manticoreConnectorMock->checkIsTablesInCluster();
+        $this->assertFalse($result);
     }
 
 }

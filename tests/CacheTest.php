@@ -1,12 +1,14 @@
 <?php
 
+namespace Tests;
+
 use Core\Cache\Cache;
 use PHPUnit\Framework\TestCase;
 
 class CacheTest extends TestCase
 {
 
-    private string $cacheStorageFile = DIRECTORY_SEPARATOR . 'tmp' . DIRECTORY_SEPARATOR . 'index_hash.dat';
+    private string $cacheStorageFile = DIRECTORY_SEPARATOR.'tmp'.DIRECTORY_SEPARATOR.'index_hash.dat';
 
     /**
      * @test
@@ -15,7 +17,7 @@ class CacheTest extends TestCase
 
     public function storeSaveFileJsonFormat(): void
     {
-        if (file_exists($this->cacheStorageFile)){
+        if (file_exists($this->cacheStorageFile)) {
             unlink($this->cacheStorageFile);
         }
 
@@ -61,7 +63,7 @@ class CacheTest extends TestCase
     public function assertCacheKeyNames(): void
     {
         $keys = [
-            'INDEX_HASH'      => 'index_hash',
+            'INDEX_HASH' => 'index_hash',
             'CHECKED_WORKERS' => 'checked_workers',
             'CHECKED_INDEXES' => 'checked_indexes',
         ];

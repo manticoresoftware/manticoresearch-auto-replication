@@ -1,5 +1,7 @@
 <?php
 
+namespace Tests;
+
 use Core\K8s\ApiClient;
 use Core\K8s\Resources;
 use Core\Manticore\ManticoreConnector;
@@ -11,9 +13,12 @@ class ManticoreJsonTest extends TestCase
 {
 
     private $manticoreMock;
+
     private function getManticoreJsonClass($conf): ManticoreJson
     {
-        $this->manticoreMock = $this->getMockBuilder(ManticoreConnector::class)->setConstructorArgs(['0','9306','',-1, false])->getMock();
+        $this->manticoreMock = $this->getMockBuilder(ManticoreConnector::class)->setConstructorArgs(
+            ['0', '9306', '', -1, false]
+        )->getMock();
 
         return new class('m_cluster', 9312, $conf, $this->manticoreMock) extends ManticoreJson {
 
@@ -131,7 +136,8 @@ class ManticoreJsonTest extends TestCase
      * @return void
      */
 
-    public function checkNodesAvailability(){
+    public function checkNodesAvailability()
+    {
         $manticoreJson = $this->getManticoreJsonClass($this->getConf());
         $resourceMock = $this->getMockBuilder(Resources::class)
             ->setConstructorArgs([new ApiClient(), [], new NotificationStub()])->getMock();
@@ -150,7 +156,7 @@ class ManticoreJsonTest extends TestCase
         $conf = $manticoreJson->getConf();
 
         unset($newNodesList[1]);
-        foreach ($newNodesList as $k=> $node){
+        foreach ($newNodesList as $k => $node) {
             $newNodesList[$k] .= ':9312';
         }
         $this->assertSame(implode(',', $newNodesList), $conf['clusters']['m_cluster']['nodes']);
@@ -161,7 +167,8 @@ class ManticoreJsonTest extends TestCase
      *
      * @return void
      */
-    public function isAllNodesInPrimaryState(){
+    public function isAllNodesInPrimaryState()
+    {
         $manticoreJson = $this->getManticoreJsonClass($this->getConf());
         $resourceMock = $this->getMockBuilder(Resources::class)
             ->setConstructorArgs([new ApiClient(), [], new NotificationStub()])->getMock();
@@ -183,7 +190,8 @@ class ManticoreJsonTest extends TestCase
      *
      * @return void
      */
-    public function hasNodesInNonPrimaryState(){
+    public function hasNodesInNonPrimaryState()
+    {
         $manticoreJson = $this->getManticoreJsonClass($this->getConf());
         $resourceMock = $this->getMockBuilder(Resources::class)
             ->setConstructorArgs([new ApiClient(), [], new NotificationStub()])->getMock();

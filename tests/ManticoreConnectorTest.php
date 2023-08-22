@@ -1,12 +1,18 @@
 <?php
 
+namespace Tests;
+
 use Core\Cache\Cache;
 use Core\Manticore\ManticoreConnector;
 use Core\Manticore\ManticoreMysqliFetcher;
 use PHPUnit\Framework\TestCase;
+use RuntimeException;
+use Tests\Traits\ManticoreConnectorTrait;
 
 class ManticoreConnectorTest extends TestCase
 {
+    use ManticoreConnectorTrait;
+
     private ManticoreConnector $manticoreConnection;
 
     private $mock;
@@ -231,7 +237,6 @@ class ManticoreConnectorTest extends TestCase
     }
 
 
-
     /**
      * @test
      * @return void
@@ -300,7 +305,6 @@ class ManticoreConnectorTest extends TestCase
      */
     public function getNotInClusterTablesGivesEmptyArray()
     {
-
         $this->mock->shouldReceive('fetch')
             ->andReturn([
                             ['Index' => 'pq', 'Type' => 'percolate'],
@@ -317,7 +321,6 @@ class ManticoreConnectorTest extends TestCase
      */
     public function getNotInClusterTablesGivesTable()
     {
-
         $this->mock->shouldReceive('fetch')
             ->andReturn([
                             ['Index' => 'pq', 'Type' => 'percolate'],
@@ -334,7 +337,6 @@ class ManticoreConnectorTest extends TestCase
      */
     public function getNotInClusterTablesGivesAllTables()
     {
-
         $answer = $this->getDefaultStatusAnswer();
 
         foreach ($answer as $k => $v) {
@@ -350,7 +352,7 @@ class ManticoreConnectorTest extends TestCase
                             ['Index' => 'not_in_cluster_table', 'Type' => 'rt'],
                         ], $answer);
 
-        $this->assertSame(['pq','tests','not_in_cluster_table'], $this->manticoreConnection->getNotInClusterTables());
+        $this->assertSame(['pq', 'tests', 'not_in_cluster_table'], $this->manticoreConnection->getNotInClusterTables());
     }
 
 
@@ -360,7 +362,6 @@ class ManticoreConnectorTest extends TestCase
      */
     public function addTableToCluster()
     {
-
         $tableName = 'newTable';
 
         $answer = $this->getDefaultStatusAnswer();
@@ -368,11 +369,9 @@ class ManticoreConnectorTest extends TestCase
         $this->mock->shouldReceive('query')
             ->withArgs(["ALTER CLUSTER ".self::CLUSTER_NAME."_cluster ADD ".$tableName, true])
             ->andReturn(true)
-
             ->shouldReceive('fetch')
             ->withArgs(['show status', true])
             ->andReturn($answer)
-
             ->shouldReceive('getConnectionError')
             ->andReturn(false);
 
@@ -405,14 +404,12 @@ class ManticoreConnectorTest extends TestCase
      */
     public function reloadIndexes()
     {
-
         $this->mock->shouldReceive('query')
             ->withArgs(['RELOAD INDEXES'])
             ->andReturn(true);
 
         $this->assertTrue($this->manticoreConnection->reloadIndexes());
     }
-
 
 
     /**
@@ -461,7 +458,8 @@ class ManticoreConnectorTest extends TestCase
      * @return void
      */
 
-    public function restoreCluster(){
+    public function restoreCluster()
+    {
         $this->mock->shouldReceive('query')
             ->withArgs(["SET CLUSTER ".self::CLUSTER_NAME."_cluster GLOBAL 'pc.bootstrap' = 1", true])
             ->andReturnNull();
@@ -481,7 +479,8 @@ class ManticoreConnectorTest extends TestCase
      * @return void
      */
 
-    public function restoreClusterConnectionErrorReturnsFalse(){
+    public function restoreClusterConnectionErrorReturnsFalse()
+    {
         $this->mock->shouldReceive('query')
             ->withArgs(["SET CLUSTER ".self::CLUSTER_NAME."_cluster GLOBAL 'pc.bootstrap' = 1", true])
             ->andReturnNull();
@@ -581,7 +580,6 @@ class ManticoreConnectorTest extends TestCase
      */
     public function getChunksCount()
     {
-
         $indexStatus = [
             ['Variable_name' => 'disk_chunks', 'Value' => '10'],
             ['Variable_name' => 'other_variable', 'Value' => '20']
@@ -602,7 +600,6 @@ class ManticoreConnectorTest extends TestCase
      */
     public function getChunksCountThrowsExceptionIfNoChunks()
     {
-
         $this->expectException(RuntimeException::class);
         $indexStatus = [
             ['Variable_name' => 'other_variable', 'Value' => '20']
@@ -621,8 +618,8 @@ class ManticoreConnectorTest extends TestCase
      *
      * @return void
      */
-    public function optimize(){
-
+    public function optimize()
+    {
         $this->mock->shouldReceive('query')
             ->withArgs(['OPTIMIZE INDEX my_index OPTION cutoff=0.5'])
             ->andReturnNull();
@@ -662,141 +659,5 @@ class ManticoreConnectorTest extends TestCase
         $resultThreads = $this->manticoreConnection->showThreads();
 
         $this->assertEquals($expectedThreads, $resultThreads);
-    }
-
-    private function getDefaultStatusAnswer(): array
-    {
-        return [
-            ['Counter' => 'uptime', 'Value' => '1045778'],
-            ['Counter' => 'connections', 'Value' => '467100'],
-            ['Counter' => 'maxed_out', 'Value' => '0'],
-            ['Counter' => 'version', 'Value' => '6.0.5 f77ce0e65@230524 dev'],
-            ['Counter' => 'mysql_version', 'Value' => '5.5.21'],
-            ['Counter' => 'command_search', 'Value' => '34861'],
-            ['Counter' => 'command_excerpt', 'Value' => '0'],
-            ['Counter' => 'command_update', 'Value' => '0'],
-            ['Counter' => 'command_keywords', 'Value' => '0'],
-            ['Counter' => 'command_persist', 'Value' => '0'],
-            ['Counter' => 'command_status', 'Value' => '73185'],
-            ['Counter' => 'command_flushattrs', 'Value' => '0'],
-            ['Counter' => 'command_sphinxql', 'Value' => '0'],
-            ['Counter' => 'command_ping', 'Value' => '0'],
-            ['Counter' => 'command_delete', 'Value' => '0'],
-            ['Counter' => 'command_set', 'Value' => '104586'],
-            ['Counter' => 'command_insert', 'Value' => '0'],
-            ['Counter' => 'command_replace', 'Value' => '0'],
-            ['Counter' => 'command_commit', 'Value' => '0'],
-            ['Counter' => 'command_suggest', 'Value' => '0'],
-            ['Counter' => 'command_json', 'Value' => '0'],
-            ['Counter' => 'command_callpq', 'Value' => '0'],
-            ['Counter' => 'command_cluster', 'Value' => '0'],
-            ['Counter' => 'command_getfield', 'Value' => '0'],
-            ['Counter' => 'agent_connect', 'Value' => '0'],
-            ['Counter' => 'agent_tfo', 'Value' => '0'],
-            ['Counter' => 'agent_retry', 'Value' => '0'],
-            ['Counter' => 'queries', 'Value' => '34861'],
-            ['Counter' => 'dist_queries', 'Value' => '0'],
-            ['Counter' => 'workers_total', 'Value' => '2'],
-            ['Counter' => 'workers_active', 'Value' => '2'],
-            ['Counter' => 'workers_clients', 'Value' => '1'],
-            ['Counter' => 'workers_clients_vip', 'Value' => '0'],
-            ['Counter' => 'work_queue_length', 'Value' => '5'],
-            ['Counter' => 'query_wall', 'Value' => '8.654'],
-            ['Counter' => 'query_cpu', 'Value' => 'OFF'],
-            ['Counter' => 'dist_wall', 'Value' => '0.000'],
-            ['Counter' => 'dist_local', 'Value' => '0.000'],
-            ['Counter' => 'dist_wait', 'Value' => '0.000'],
-            ['Counter' => 'query_reads', 'Value' => 'OFF'],
-            ['Counter' => 'query_readkb', 'Value' => 'OFF'],
-            ['Counter' => 'query_readtime', 'Value' => 'OFF'],
-            ['Counter' => 'avg_query_wall', 'Value' => '0.000'],
-            ['Counter' => 'avg_query_cpu', 'Value' => 'OFF'],
-            ['Counter' => 'avg_dist_wall', 'Value' => '0.000'],
-            ['Counter' => 'avg_dist_local', 'Value' => '0.000'],
-            ['Counter' => 'avg_dist_wait', 'Value' => '0.000'],
-            ['Counter' => 'avg_query_reads', 'Value' => 'OFF'],
-            ['Counter' => 'avg_query_readkb', 'Value' => 'OFF'],
-            ['Counter' => 'avg_query_readtime', 'Value' => 'OFF'],
-            ['Counter' => 'qcache_max_bytes', 'Value' => '16777216'],
-            ['Counter' => 'qcache_thresh_msec', 'Value' => '3000'],
-            ['Counter' => 'qcache_ttl_sec', 'Value' => '60'],
-            ['Counter' => 'qcache_cached_queries', 'Value' => '0'],
-            ['Counter' => 'qcache_used_bytes', 'Value' => '0'],
-            ['Counter' => 'qcache_hits', 'Value' => '0'],
-            ['Counter' => 'cluster_name', 'Value' => 'm1_cluster'],
-            ['Counter' => 'cluster_m1_cluster_state_uuid', 'Value' => '99920aee-36da-11ee-bae0-faecc57e7d56'],
-            ['Counter' => 'cluster_m1_cluster_conf_id', 'Value' => '1'],
-            ['Counter' => 'cluster_m1_cluster_status', 'Value' => 'primary'],
-            ['Counter' => 'cluster_m1_cluster_size', 'Value' => '1'],
-            ['Counter' => 'cluster_m1_cluster_local_index', 'Value' => '0'],
-            ['Counter' => 'cluster_m1_cluster_node_state', 'Value' => 'synced'],
-            ['Counter' => 'cluster_m1_cluster_nodes_set', 'Value' => ''],
-            ['Counter' => 'cluster_m1_cluster_nodes_view', 'Value' => '10.42.2.137:9312,10.42.2.137:9315:replication'],
-            ['Counter' => 'cluster_m1_cluster_indexes_count', 'Value' => '2'],
-            ['Counter' => 'cluster_m1_cluster_indexes', 'Value' => 'pq,tests'],
-            ['Counter' => 'cluster_m1_cluster_local_state_uuid', 'Value' => '99920aee-36da-11ee-bae0-faecc57e7d56'],
-            ['Counter' => 'cluster_m1_cluster_protocol_version', 'Value' => '9'],
-            ['Counter' => 'cluster_m1_cluster_last_applied', 'Value' => '10'],
-            ['Counter' => 'cluster_m1_cluster_last_committed', 'Value' => '10'],
-            ['Counter' => 'cluster_m1_cluster_replicated', 'Value' => '0'],
-            ['Counter' => 'cluster_m1_cluster_replicated_bytes', 'Value' => '0'],
-            ['Counter' => 'cluster_m1_cluster_repl_keys', 'Value' => '0'],
-            ['Counter' => 'cluster_m1_cluster_repl_keys_bytes', 'Value' => '0'],
-            ['Counter' => 'cluster_m1_cluster_repl_data_bytes', 'Value' => '0'],
-            ['Counter' => 'cluster_m1_cluster_repl_other_bytes', 'Value' => '0'],
-            ['Counter' => 'cluster_m1_cluster_received', 'Value' => '2'],
-            ['Counter' => 'cluster_m1_cluster_received_bytes', 'Value' => '194'],
-            ['Counter' => 'cluster_m1_cluster_local_commits', 'Value' => '0'],
-            ['Counter' => 'cluster_m1_cluster_local_cert_failures', 'Value' => '0'],
-            ['Counter' => 'cluster_m1_cluster_local_replays', 'Value' => '0'],
-            ['Counter' => 'cluster_m1_cluster_local_send_queue', 'Value' => '0'],
-            ['Counter' => 'cluster_m1_cluster_local_send_queue_max', 'Value' => '2'],
-            ['Counter' => 'cluster_m1_cluster_local_send_queue_min', 'Value' => '0'],
-            ['Counter' => 'cluster_m1_cluster_local_send_queue_avg', 'Value' => '0.500000'],
-            ['Counter' => 'cluster_m1_cluster_local_recv_queue', 'Value' => '0'],
-            ['Counter' => 'cluster_m1_cluster_local_recv_queue_max', 'Value' => '2'],
-            ['Counter' => 'cluster_m1_cluster_local_recv_queue_min', 'Value' => '0'],
-            ['Counter' => 'cluster_m1_cluster_local_recv_queue_avg', 'Value' => '0.500000'],
-            ['Counter' => 'cluster_m1_cluster_local_cached_downto', 'Value' => '0'],
-            ['Counter' => 'cluster_m1_cluster_flow_control_paused_ns', 'Value' => '0'],
-            ['Counter' => 'cluster_m1_cluster_flow_control_paused', 'Value' => '0.000000'],
-            ['Counter' => 'cluster_m1_cluster_flow_control_sent', 'Value' => '0'],
-            ['Counter' => 'cluster_m1_cluster_flow_control_recv', 'Value' => '0'],
-            ['Counter' => 'cluster_m1_cluster_flow_control_interval', 'Value' => '[ 100, 100 ] '],
-            ['Counter' => 'cluster_m1_cluster_flow_control_interval_low', 'Value' => '100'],
-            ['Counter' => 'cluster_m1_cluster_flow_control_interval_high', 'Value' => '100'],
-            ['Counter' => 'cluster_m1_cluster_flow_control_status', 'Value' => 'OFF'],
-            ['Counter' => 'cluster_m1_cluster_cert_deps_distance', 'Value' => '0.000000'],
-            ['Counter' => 'cluster_m1_cluster_apply_oooe', 'Value' => '0.000000'],
-            ['Counter' => 'cluster_m1_cluster_apply_oool', 'Value' => '0.000000'],
-            ['Counter' => 'cluster_m1_cluster_apply_window', 'Value' => '0.000000'],
-            ['Counter' => 'cluster_m1_cluster_commit_oooe', 'Value' => '0.000000'],
-            ['Counter' => 'cluster_m1_cluster_commit_oool', 'Value' => '0.000000'],
-            ['Counter' => 'cluster_m1_cluster_commit_window', 'Value' => '0.000000'],
-            ['Counter' => 'cluster_m1_cluster_local_state', 'Value' => '4'],
-            ['Counter' => 'cluster_m1_cluster_local_state_comment', 'Value' => 'Synced'],
-            ['Counter' => 'cluster_m1_cluster_cert_index_size', 'Value' => '0'],
-            ['Counter' => 'cluster_m1_cluster_cert_bucket_count', 'Value' => '2'],
-            ['Counter' => 'cluster_m1_cluster_gcache_pool_size', 'Value' => '1320'],
-            ['Counter' => 'cluster_m1_cluster_causal_reads', 'Value' => '0'],
-            ['Counter' => 'cluster_m1_cluster_cert_interval', 'Value' => '0.000000'],
-            ['Counter' => 'cluster_m1_cluster_open_transactions', 'Value' => '0'],
-            ['Counter' => 'cluster_m1_cluster_open_connections', 'Value' => '0'],
-            ['Counter' => 'cluster_m1_cluster_ist_receive_status', 'Value' => ''],
-            ['Counter' => 'cluster_m1_cluster_ist_receive_seqno_start', 'Value' => '0'],
-            ['Counter' => 'cluster_m1_cluster_ist_receive_seqno_current', 'Value' => '0'],
-            ['Counter' => 'cluster_m1_cluster_ist_receive_seqno_end', 'Value' => '0'],
-            [
-                'Counter' => 'cluster_m1_cluster_incoming_addresses',
-                'Value' => '10.42.2.137:9312,10.42.2.137:9315:replication'
-            ],
-            ['Counter' => 'cluster_m1_cluster_cluster_weight', 'Value' => '1'],
-            ['Counter' => 'cluster_m1_cluster_desync_count', 'Value' => '0'],
-            ['Counter' => 'cluster_m1_cluster_evs_delayed', 'Value' => ''],
-            ['Counter' => 'cluster_m1_cluster_evs_evict_list', 'Value' => ''],
-            ['Counter' => 'cluster_m1_cluster_evs_repl_latency', 'Value' => '0/0/0/0/0'],
-            ['Counter' => 'cluster_m1_cluster_evs_state', 'Value' => 'OPERATIONAL'],
-            ['Counter' => 'cluster_m1_cluster_gcomm_uuid', 'Value' => 'd4940c7f-36dc-11ee-bc08-472df7e55c82']
-        ];
     }
 }

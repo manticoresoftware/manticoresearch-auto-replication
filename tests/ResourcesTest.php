@@ -1,9 +1,13 @@
 <?php
 
+namespace Tests;
+
 use Core\K8s\ApiClient;
 use Core\K8s\Resources;
 use Core\Notifications\NotificationStub;
+use JsonException;
 use PHPUnit\Framework\TestCase;
+use RuntimeException;
 
 class ResourcesTest extends TestCase
 {
@@ -226,7 +230,6 @@ class ResourcesTest extends TestCase
 
         $this->expectException(RuntimeException::class);
         $oldest = $this->resources->getOldestActivePodName();
-
     }
 
 
@@ -621,11 +624,11 @@ class ResourcesTest extends TestCase
         $this->assertSame([], $this->resources->getPodsHostnames());
         $this->assertSame([], $this->resources->getPodsFullHostnames());
         $this->assertSame(0, $this->resources->getCurrentReplica());
-
     }
 
-    private function defineDev(){
-        if (!defined("DEV")){
+    private function defineDev()
+    {
+        if (!defined("DEV")) {
             define("DEV", true);
         }
     }
