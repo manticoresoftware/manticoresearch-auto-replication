@@ -6,6 +6,7 @@ use Core\K8s\ApiClient;
 use Core\K8s\Resources;
 use Core\Manticore\ManticoreJson;
 use Core\Notifications\NotificationStub;
+use JsonException;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -18,7 +19,10 @@ class yDevModeTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        define("DEV", true);
+
+        if (!defined('DEV')){
+            define("DEV", true);
+        }
     }
 
     /**

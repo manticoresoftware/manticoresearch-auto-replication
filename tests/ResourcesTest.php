@@ -17,7 +17,9 @@ class ResourcesTest extends TestCase
     {
         parent::setUp();
 
-        $this->mock = $this->getMockBuilder(ApiClient::class)->getMock();
+        $this->mock = \Mockery::mock(ApiClient::class);
+
+
         $this->resources = new class($this->mock, [], new NotificationStub()) extends Resources {
             public function getLabels(): array
             {
@@ -60,9 +62,9 @@ class ResourcesTest extends TestCase
     public function getGetPodsReturnsArrayOfPods()
     {
         $defaultAnswer = $this->getDefaultK8sAnswer();
-        $this->mock->method('getManticorePods')
+        $this->mock->shouldReceive('getManticorePods')
             ->with([])
-            ->willReturn($defaultAnswer);
+            ->andReturn($defaultAnswer);
 
         $pods = $this->resources->getPods();
 
@@ -94,9 +96,9 @@ class ResourcesTest extends TestCase
 
         // Replace Ready phase of balancer to be sure about correct filtering
         $defaultAnswer['items'][0]['status']['phase'] = 'Not Ready';
-        $this->mock->method('getManticorePods')
+        $this->mock->shouldReceive('getManticorePods')
             ->with([])
-            ->willReturn($defaultAnswer);
+            ->andReturn($defaultAnswer);
 
         $pods = $this->resources->getPods();
 
@@ -127,9 +129,9 @@ class ResourcesTest extends TestCase
 
         // Remove Ready condition record to be sure about correct filtering
         unset($defaultAnswer['items'][3]['status']['conditions'][1]);
-        $this->mock->method('getManticorePods')
+        $this->mock->shouldReceive('getManticorePods')
             ->with([])
-            ->willReturn($defaultAnswer);
+            ->andReturn($defaultAnswer);
 
         $pods = $this->resources->getPods();
 
@@ -154,9 +156,9 @@ class ResourcesTest extends TestCase
      */
     public function getPodTerminatesInCaseNoPods()
     {
-        $this->mock->method('getManticorePods')
+        $this->mock->shouldReceive('getManticorePods')
             ->with([])
-            ->willReturn(['api' => 'v1']);
+            ->andReturn(['api' => 'v1']);
 
         $this->expectException(RuntimeException::class);
 
@@ -171,9 +173,9 @@ class ResourcesTest extends TestCase
     public function getActivePodsCount()
     {
         $defaultAnswer = $this->getDefaultK8sAnswer();
-        $this->mock->method('getManticorePods')
+        $this->mock->shouldReceive('getManticorePods')
             ->with([])
-            ->willReturn($defaultAnswer);
+            ->andReturn($defaultAnswer);
 
         $pods = $this->resources->getActivePodsCount();
 
@@ -189,9 +191,9 @@ class ResourcesTest extends TestCase
     {
         $defaultAnswer = $this->getDefaultK8sAnswer();
         unset($defaultAnswer['items'][0]);
-        $this->mock->method('getManticorePods')
+        $this->mock->shouldReceive('getManticorePods')
             ->with([])
-            ->willReturn($defaultAnswer);
+            ->andReturn($defaultAnswer);
 
         $oldest = $this->resources->getOldestActivePodName();
         $this->assertSame('manticore-helm-manticoresearch-worker-1', $oldest);
@@ -206,9 +208,9 @@ class ResourcesTest extends TestCase
     {
         $defaultAnswer = $this->getDefaultK8sAnswer();
         unset($defaultAnswer['items'][0]);
-        $this->mock->method('getManticorePods')
+        $this->mock->shouldReceive('getManticorePods')
             ->with([])
-            ->willReturn($defaultAnswer);
+            ->andReturn($defaultAnswer);
 
         $oldest = $this->resources->getOldestActivePodName(false);
         $this->assertSame('manticore-helm-manticoresearch-worker-0', $oldest);
@@ -224,9 +226,9 @@ class ResourcesTest extends TestCase
     {
         $defaultAnswer = $this->getDefaultK8sAnswer();
         unset($defaultAnswer['items'][0], $defaultAnswer['items'][2], $defaultAnswer['items'][3]);
-        $this->mock->method('getManticorePods')
+        $this->mock->shouldReceive('getManticorePods')
             ->with([])
-            ->willReturn($defaultAnswer);
+            ->andReturn($defaultAnswer);
 
         $this->expectException(RuntimeException::class);
         $oldest = $this->resources->getOldestActivePodName();
@@ -242,9 +244,9 @@ class ResourcesTest extends TestCase
     {
         $defaultAnswer = $this->getDefaultK8sAnswer();
 
-        $this->mock->method('getManticorePods')
+        $this->mock->shouldReceive('getManticorePods')
             ->with([])
-            ->willReturn($defaultAnswer);
+            ->andReturn($defaultAnswer);
 
         $this->assertSame([
                               'manticore-helm-manticoresearch-balancer-6d9fcc96c5-fkvhc' => '10.42.2.101',
@@ -265,9 +267,9 @@ class ResourcesTest extends TestCase
         $defaultAnswer = $this->getDefaultK8sAnswer();
 
         $defaultAnswer['items'][2]['status']['phase'] = 'Not Ready';
-        $this->mock->method('getManticorePods')
+        $this->mock->shouldReceive('getManticorePods')
             ->with([])
-            ->willReturn($defaultAnswer);
+            ->andReturn($defaultAnswer);
 
         $ips = $this->resources->getPodsIp();
         $this->assertSame([
@@ -289,9 +291,9 @@ class ResourcesTest extends TestCase
         $defaultAnswer = $this->getDefaultK8sAnswer();
 
         unset($defaultAnswer['items'][1]['status']['podIP']);
-        $this->mock->method('getManticorePods')
+        $this->mock->shouldReceive('getManticorePods')
             ->with([])
-            ->willReturn($defaultAnswer);
+            ->andReturn($defaultAnswer);
 
         $ips = $this->resources->getPodsIp();
         $this->assertSame([
@@ -313,9 +315,9 @@ class ResourcesTest extends TestCase
     {
         $defaultAnswer = $this->getDefaultK8sAnswer();
 
-        $this->mock->method('getManticorePods')
+        $this->mock->shouldReceive('getManticorePods')
             ->with([])
-            ->willReturn($defaultAnswer);
+            ->andReturn($defaultAnswer);
 
         $this->assertSame([
                               'manticore-helm-manticoresearch-balancer-6d9fcc96c5-fkvhc',
@@ -336,9 +338,9 @@ class ResourcesTest extends TestCase
     {
         $defaultAnswer = $this->getDefaultK8sAnswer();
 
-        $this->mock->method('getManticorePods')
+        $this->mock->shouldReceive('getManticorePods')
             ->with([])
-            ->willReturn($defaultAnswer);
+            ->andReturn($defaultAnswer);
 
         $this->assertSame([
                               'manticore-helm-manticoresearch-balancer-6d9fcc96c5-fkvhc..manticore-helm.svc.cluster.local',
@@ -353,15 +355,14 @@ class ResourcesTest extends TestCase
     /**
      * @test
      * @return void
-     * @throws JsonException
      */
     public function getPodMinAvailableReplica()
     {
         $defaultAnswer = $this->getDefaultK8sAnswer();
         unset($defaultAnswer['items'][0]);
-        $this->mock->method('getManticorePods')
+        $this->mock->shouldReceive('getManticorePods')
             ->with([])
-            ->willReturn($defaultAnswer);
+            ->andReturn($defaultAnswer);
 
         $this->assertSame(
             'manticore-helm-manticoresearch-worker-1',
@@ -377,9 +378,9 @@ class ResourcesTest extends TestCase
     {
         $defaultAnswer = $this->getDefaultK8sAnswer();
         unset($defaultAnswer['items'][0]);
-        $this->mock->method('getManticorePods')
+        $this->mock->shouldReceive('getManticorePods')
             ->with([])
-            ->willReturn($defaultAnswer);
+            ->andReturn($defaultAnswer);
 
         $this->assertSame(
             'manticore-helm-manticoresearch-worker-0',
@@ -396,9 +397,9 @@ class ResourcesTest extends TestCase
         $defaultAnswer = $this->getDefaultK8sAnswer();
         $defaultAnswer['items'] = [];
 
-        $this->mock->method('getManticorePods')
+        $this->mock->shouldReceive('getManticorePods')
             ->with([])
-            ->willReturn($defaultAnswer);
+            ->andReturn($defaultAnswer);
 
         $this->expectException(RuntimeException::class);
         $this->resources->getMinAvailableReplica();
@@ -463,9 +464,9 @@ class ResourcesTest extends TestCase
     public function getPodIpAllConditions()
     {
         $defaultAnswer = $this->getDefaultK8sAnswer();
-        $this->mock->method('getManticorePods')
+        $this->mock->shouldReceive('getManticorePods')
             ->with([])
-            ->willReturn($defaultAnswer);
+            ->andReturn($defaultAnswer);
 
         $this->assertSame(
             [
@@ -487,9 +488,9 @@ class ResourcesTest extends TestCase
     {
         $defaultAnswer = $this->getDefaultK8sAnswer();
         unset($defaultAnswer['items'][1]['status']['conditions'][1]);
-        $this->mock->method('getManticorePods')
+        $this->mock->shouldReceive('getManticorePods')
             ->with([])
-            ->willReturn($defaultAnswer);
+            ->andReturn($defaultAnswer);
 
         $this->assertSame(
             [
@@ -512,9 +513,9 @@ class ResourcesTest extends TestCase
     {
         $defaultAnswer = $this->getDefaultK8sAnswer();
         $defaultAnswer['items'][1]['metadata']['deletionTimestamp'] = '10-10-1900 13:22:11';
-        $this->mock->method('getManticorePods')
+        $this->mock->shouldReceive('getManticorePods')
             ->with([])
-            ->willReturn($defaultAnswer);
+            ->andReturn($defaultAnswer);
 
         $this->assertSame(
             [
@@ -536,9 +537,9 @@ class ResourcesTest extends TestCase
     {
         $defaultAnswer = $this->getDefaultK8sAnswer();
         unset($defaultAnswer['items'][2]['status']['podIP']);
-        $this->mock->method('getManticorePods')
+        $this->mock->shouldReceive('getManticorePods')
             ->with([])
-            ->willReturn($defaultAnswer);
+            ->andReturn($defaultAnswer);
 
         $this->assertSame(
             [
@@ -559,9 +560,9 @@ class ResourcesTest extends TestCase
     {
         $defaultAnswer = $this->getDefaultK8sAnswer();
         unset($defaultAnswer['items']);
-        $this->mock->method('getManticorePods')
+        $this->mock->shouldReceive('getManticorePods')
             ->with([])
-            ->willReturn($defaultAnswer);
+            ->andReturn($defaultAnswer);
 
         $this->expectException(RuntimeException::class);
         $this->resources->getPodIpAllConditions();
@@ -580,9 +581,9 @@ class ResourcesTest extends TestCase
         $nonReadyResponse = $defaultAnswer;
 
 
-        $this->mock->method('getManticorePods')
+        $this->mock->shouldReceive('getManticorePods')
             ->with([])
-            ->willReturn($nonReadyResponse, $readyResponse);
+            ->andReturn($nonReadyResponse, $readyResponse);
 
         $startTime = microtime(true);
         $this->resources->wait('manticore-helm-manticoresearch-worker-0', 5);
@@ -601,9 +602,9 @@ class ResourcesTest extends TestCase
         $defaultAnswer = $this->getDefaultK8sAnswer();
         unset($defaultAnswer['items'][1]['status']['conditions'][1]);
 
-        $this->mock->method('getManticorePods')
+        $this->mock->shouldReceive('getManticorePods')
             ->with([])
-            ->willReturn($defaultAnswer, $defaultAnswer, $defaultAnswer);
+            ->andReturn($defaultAnswer, $defaultAnswer, $defaultAnswer);
 
         $startTime = microtime(true);
         $this->resources->wait('manticore-helm-manticoresearch-worker-0', 1);

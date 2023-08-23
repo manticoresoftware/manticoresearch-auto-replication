@@ -17,7 +17,7 @@ class ApiClientTest extends TestCase
     {
         parent::setUp();
 
-        $this->mock = $this->getMockBuilder(Client::class)->getMock();
+        $this->mock = \Mockery::mock(Client::class);
 
         $this->apiClient = new class($this->mock) extends ApiClient {
             public function __construct($httpClientMock)
@@ -117,8 +117,9 @@ class ApiClientTest extends TestCase
     public function getMethodCallRequest()
     {
         $url = 'https://google.com';
-        $this->mock->method('request')->with('GET', $url, [])
-            ->willReturn(new Response(200, [], "body"));
+        $this->mock->shouldReceive('request')
+            ->with('GET', $url, [])
+            ->andReturn(new Response(200, [], "body"));
         $this->assertInstanceOf(Response::class, $this->apiClient->get($url));
     }
 
@@ -134,13 +135,13 @@ class ApiClientTest extends TestCase
         $returnBody = ['api' => 'v1', 'items' => []];
 
         $this->mock
-            ->method('request')
+            ->shouldReceive('request')
             ->with(
                 'GET',
                 'https://kubernetes.default.svc/api/v1/namespaces//pods?labelSelector=instance=my-instance',
                 $this->getDefaultRequestHeaders()
             )
-            ->willReturn(new Response(200, [], json_encode($returnBody)));
+            ->andReturn(new Response(200, [], json_encode($returnBody)));
 
         $result = $this->apiClient->getManticorePods($labels);
         $this->assertSame($returnBody, $result);
@@ -158,13 +159,13 @@ class ApiClientTest extends TestCase
         $returnBody = ['api' => 'v1', 'items' => []];
         $this->apiClient->setMode(ApiClient::DEV_MODE);
         $this->mock
-            ->method('request')
+            ->shouldReceive('request')
             ->with(
                 'GET',
                 'https://kubernetes.default.svc/api/v1/namespaces//pods',
                 []
             )
-            ->willReturn(new Response(200, [], json_encode($returnBody)));
+            ->andReturn(new Response(200, [], json_encode($returnBody)));
 
         $result = $this->apiClient->getManticorePods();
         $this->assertSame($returnBody, $result);
@@ -195,13 +196,13 @@ class ApiClientTest extends TestCase
         $this->apiClient->setNamespace($ns);
 
         $this->mock
-            ->method('request')
+            ->shouldReceive('request')
             ->with(
                 'GET',
                 'https://kubernetes.default.svc/api/v1/namespaces/'.$ns.'/pods',
                 []
             )
-            ->willReturn(new Response(200, [], json_encode($returnBody)));
+            ->andReturn(new Response(200, [], json_encode($returnBody)));
 
         $result = $this->apiClient->getManticorePods();
         $this->assertSame($returnBody, $result);
@@ -222,13 +223,13 @@ class ApiClientTest extends TestCase
         $this->apiClient->setApiUrl($apiURL);
 
         $this->mock
-            ->method('request')
+            ->shouldReceive('request')
             ->with(
                 'GET',
                 $apiURL.'/api/v1/namespaces//pods',
                 []
             )
-            ->willReturn(new Response(200, [], json_encode($returnBody)));
+            ->andReturn(new Response(200, [], json_encode($returnBody)));
 
         $result = $this->apiClient->getManticorePods();
         $this->assertSame($returnBody, $result);
@@ -243,13 +244,13 @@ class ApiClientTest extends TestCase
     public function gettingPodsThrowExceptionIfNonValidJsonResponded()
     {
         $this->mock
-            ->method('request')
+            ->shouldReceive('request')
             ->with(
                 'GET',
                 'https://kubernetes.default.svc/api/v1/namespaces//pods',
                 $this->getDefaultRequestHeaders()
             )
-            ->willReturn(new Response(200, [], 'non valid json'));
+            ->andReturn(new Response(200, [], 'non valid json'));
 
         $this->expectException(JsonException::class);
         $this->apiClient->getManticorePods();
@@ -267,13 +268,13 @@ class ApiClientTest extends TestCase
         $returnBody = ['api' => 'v1', 'items' => []];
         $this->apiClient->setMode(ApiClient::DEV_MODE);
         $this->mock
-            ->method('request')
+            ->shouldReceive('request')
             ->with(
                 'GET',
                 'https://kubernetes.default.svc/api/v1/nodes',
                 []
             )
-            ->willReturn(new Response(200, [], json_encode($returnBody)));
+            ->andReturn(new Response(200, [], json_encode($returnBody)));
 
         $result = $this->apiClient->getNodes();
         $this->assertSame($returnBody, $result);

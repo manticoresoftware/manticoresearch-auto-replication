@@ -102,7 +102,8 @@ class ManticoreConnector
     public function isClusterPrimary(): bool
     {
         $this->checkIsStatusLoaded();
-        return ($this->searchdStatus['cluster_'.$this->searchdStatus['cluster_name'].'_status'] === 'primary') ?? false;
+        return (isset($this->searchdStatus['cluster_'.$this->searchdStatus['cluster_name'].'_status']) &&
+            $this->searchdStatus['cluster_'.$this->searchdStatus['cluster_name'].'_status'] === 'primary') ?? false;
     }
 
     public function createCluster($log = true): bool

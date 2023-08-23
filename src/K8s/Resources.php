@@ -154,7 +154,7 @@ class Resources
 
         foreach ($this->pods as $pod) {
             $hostnames[] = $pod['metadata']['name'].
-                '.'.$pod['spec']['subdomain'].
+                '.'.($pod['spec']['subdomain'] ?? '').
                 '.'.$pod['metadata']['namespace'].
                 '.svc.cluster.local';
         }

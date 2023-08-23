@@ -16,9 +16,7 @@ class ManticoreJsonTest extends TestCase
 
     private function getManticoreJsonClass($conf): ManticoreJson
     {
-        $this->manticoreMock = $this->getMockBuilder(ManticoreConnector::class)->setConstructorArgs(
-            ['0', '9306', '', -1, false]
-        )->getMock();
+        $this->manticoreMock = \Mockery::mock(ManticoreConnector::class);
 
         return new class('m_cluster', 9312, $conf, $this->manticoreMock) extends ManticoreJson {
 
@@ -142,7 +140,7 @@ class ManticoreJsonTest extends TestCase
         $resourceMock = $this->getMockBuilder(Resources::class)
             ->setConstructorArgs([new ApiClient(), [], new NotificationStub()])->getMock();
 
-        $this->manticoreMock->method('checkClusterName')->willReturn(true, false, true);
+        $this->manticoreMock->shouldReceive('checkClusterName')->andReturn(true, false, true);
 
         $newNodesList = [
             'manticore-helm-manticoresearch-worker-0.manticore-helm-manticoresearch-worker-svc.manticore-helm.svc.cluster.local',
@@ -173,7 +171,7 @@ class ManticoreJsonTest extends TestCase
         $resourceMock = $this->getMockBuilder(Resources::class)
             ->setConstructorArgs([new ApiClient(), [], new NotificationStub()])->getMock();
 
-        $this->manticoreMock->method('isClusterPrimary')->willReturn(true, true, true);
+        $this->manticoreMock->shouldReceive('isClusterPrimary')->andReturn(true, true, true);
         $resourceMock->method('getPodsIp')
             ->willReturn([
                              'manticore-helm-manticoresearch-worker-0' => '10.42.2.115',
@@ -196,7 +194,7 @@ class ManticoreJsonTest extends TestCase
         $resourceMock = $this->getMockBuilder(Resources::class)
             ->setConstructorArgs([new ApiClient(), [], new NotificationStub()])->getMock();
 
-        $this->manticoreMock->method('isClusterPrimary')->willReturn(false, false, false);
+        $this->manticoreMock->shouldReceive('isClusterPrimary')->andReturn(false, false, false);
         $resourceMock->method('getPodsIp')
             ->willReturn([
                              'manticore-helm-manticoresearch-worker-0' => '10.42.2.115',
