@@ -33,7 +33,7 @@ class Locker
     public function unlock($exitStatus = 1): void
     {
         fclose($this->fp);
-        exit($exitStatus);
+        $this->terminate($exitStatus);
     }
 
     public function checkOptimizeLock($file, $workerPort = 9306): bool
@@ -41,7 +41,7 @@ class Locker
         if ($this->optimizeLockFile !== null && file_exists($this->optimizeLockFile)) {
             $ip = file_get_contents($file);
 
-            $manticore = new ManticoreConnector($ip, $workerPort, null, -1);
+            $manticore = $this->getManticoreConnector($ip, $workerPort);
             $manticore->setMaxAttempts(180);
             $rows = $manticore->showThreads();
 
@@ -62,8 +62,17 @@ class Locker
     public function setOptimizeLock($ip): void
     {
         if ($this->optimizeLockFile === null) {
-            throw new \http\Exception\RuntimeException("OPTIMIZE lock file is not set");
+            throw new \RuntimeException("OPTIMIZE lock file is not set");
         }
         file_put_contents($this->optimizeLockFile, $ip);
+    }
+
+    protected function terminate($exitStatus){
+        exit($exitStatus);
+    }
+
+    protected function getManticoreConnector($host, $port): ManticoreConnector
+    {
+        return new ManticoreConnector($host, $port, null, -1);
     }
 }

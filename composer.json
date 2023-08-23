@@ -16,14 +16,17 @@
     "ext-mysqli": "*",
     "ext-json": "*",
     "ext-curl": "*",
-    "analog/analog": "^1.0"
+    "analog/analog": "^1.0",
+    "phpunit/phpunit": "^10.3"
   },
   "require-dev": {
-    "roave/security-advisories": "dev-latest"
+    "roave/security-advisories": "dev-latest",
+    "mockery/mockery": "dev-main@dev"
   },
   "autoload": {
     "psr-4": {
-      "Core\\": "./src/"
+      "Core\\": "./src/",
+      "Tests\\": "./tests/"
     }
   }
 }

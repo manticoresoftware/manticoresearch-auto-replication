@@ -10,70 +10,31 @@ class ManticoreStreamsConnector extends ManticoreConnector
     public const INDEX_TYPE_RT = 'rt';
 
     public const INDEX_LIST = [self::PQ_INDEX_NAME, self::TESTS_INDEX_NAME];
-    public const INDEX_TYPES = [self::PQ_INDEX_NAME => self::INDEX_TYPE_PERCOLATE, self::TESTS_INDEX_NAME => self::INDEX_TYPE_RT];
-
-    public function checkIsTablesInCluster(): bool
-    {
-        $inClusterIndexes = $this->searchdStatus['cluster_' . $this->clusterName . '_indexes'];
-
-        if ($inClusterIndexes === "") {
-            return false;
-        }
-
-        $inClusterIndexes = explode(",", $inClusterIndexes);
-
-        $matchesCount = 0;
-        foreach (self::INDEX_LIST as $expectedIndexName) {
-            if (in_array($expectedIndexName, $inClusterIndexes, true)) {
-                $matchesCount++;
-            }
-        }
-
-        $result = $matchesCount === count(self::INDEX_LIST);
-
-        if ( ! $result) {
-            \Analog::warning(
-                "Tables mismatch. Expected " . implode(',', self::INDEX_LIST)
-                . " found " . implode(',', $inClusterIndexes)
-            );
-        }
-
-        return $result;
-    }
-
-    public function isTableInCluster($tableName): bool
-    {
-        $inClusterIndexes = $this->searchdStatus['cluster_' . $this->clusterName . '_indexes'];
-
-        if ($inClusterIndexes === "") {
-            return false;
-        }
-
-        $inClusterIndexes = explode(",", $inClusterIndexes);
-
-        return in_array($tableName, $inClusterIndexes, true);
-    }
+    public const INDEX_TYPES = [
+        self::PQ_INDEX_NAME => self::INDEX_TYPE_PERCOLATE,
+        self::TESTS_INDEX_NAME => self::INDEX_TYPE_RT
+    ];
 
 
     public function createTable($tableName, $type): bool
     {
-        if ( ! in_array($type, [self::INDEX_TYPE_PERCOLATE, self::INDEX_TYPE_RT])) {
-            throw new \RuntimeException('Wrong table type ' . $type);
+        if (!in_array($type, [self::INDEX_TYPE_PERCOLATE, self::INDEX_TYPE_RT])) {
+            throw new \RuntimeException('Wrong table type '.$type);
         }
 
-        if ( ! $this->fields) {
-            throw new \RuntimeException('Fields was not initialized ' . $tableName);
+        if (!$this->fields) {
+            throw new \RuntimeException('Fields was not initialized '.$tableName);
         }
 
-        if ( ! $this->rtInclude) {
-            throw new \RuntimeException('RT include was not initialized ' . $tableName);
+        if (!$this->rtInclude) {
+            throw new \RuntimeException('RT include was not initialized '.$tableName);
         }
 
-        $this->query(
-            "CREATE TABLE IF NOT EXISTS $tableName (" . implode(
+        $this->fetcher->query(
+            "CREATE TABLE IF NOT EXISTS $tableName (".implode(
                 ',',
                 $this->fields
-            ) . ") type='$type' $this->rtInclude"
+            ).") type='$type' $this->rtInclude"
         );
 
         if ($this->getConnectionError()) {
@@ -86,25 +47,22 @@ class ManticoreStreamsConnector extends ManticoreConnector
 
     public function connectAndCreate(): bool
     {
+        $this->checkIsStatusLoaded();
         $errors = [];
         if ($this->checkClusterName()) {
-            if ( ! $this->checkIsTablesInCluster()) {
-                foreach ([self::PQ_INDEX_NAME, self::TESTS_INDEX_NAME] as $indexName) {
-                    if ($this->isTableExist($indexName)) {
-                        if ( ! $this->isTableInCluster($indexName) && ! $this->addTableToCluster($indexName)) {
-                            $errors[] = "Can't add table $indexName to cluster " . $this->clusterName;
-                        }
-                    } else {
-                        if ( ! $this->createTable($indexName, self::INDEX_TYPES[$indexName])) {
+            $nonClusterTables = $this->getNotInClusterTables(self::INDEX_LIST);
+            if ($nonClusterTables !== []) {
+                foreach ($nonClusterTables as $indexName) {
+                    if (!$this->isTableExist($indexName)) {
+                        if (!$this->createTable($indexName, self::INDEX_TYPES[$indexName])) {
                             $errors[] = "Can't create table $indexName";
                             continue;
                         }
-                        if ($this->addTableToCluster($indexName)) {
-                            $errors[] = "Can't add table $indexName to cluster " . $this->clusterName;
-                        }
+                    }
+                    if (!$this->addTableToCluster($indexName)) {
+                        $errors[] = "Can't add table $indexName to cluster ".$this->clusterName;
                     }
                 }
-
 
                 if ($errors === []) {
                     return true;
@@ -118,16 +76,14 @@ class ManticoreStreamsConnector extends ManticoreConnector
             }
 
             return true;
-        }
-
-        if ($this->createCluster()) {
+        } elseif (!$this->checkClusterName() && $this->createCluster()) {
             foreach ([self::PQ_INDEX_NAME, self::TESTS_INDEX_NAME] as $indexName) {
-                if ( ! $this->createTable($indexName, self::INDEX_TYPES[$indexName])) {
+                if (!$this->createTable($indexName, self::INDEX_TYPES[$indexName])) {
                     $errors[] = "Can't create table $indexName";
                     continue;
                 }
-                if ($this->addTableToCluster($indexName)) {
-                    $errors[] = "Can't add table $indexName to cluster " . $this->clusterName;
+                if (!$this->addTableToCluster($indexName)) {
+                    $errors[] = "Can't add table $indexName to cluster ".$this->clusterName;
                 }
             }
 
@@ -149,19 +105,19 @@ class ManticoreStreamsConnector extends ManticoreConnector
     public function setFields($rules)
     {
         $this->rtInclude = $this->getRtInclude();
-        $fields          = ['`invalidjson` text indexed'];
-        $envFields       = explode("|", $rules);
+        $fields = ['`invalidjson` text indexed'];
+        $envFields = explode("|", $rules);
         foreach ($envFields as $field) {
             $field = explode("=", $field);
-            if ( ! empty($field[0]) && ! empty($field[1])) {
+            if (!empty($field[0]) && !empty($field[1])) {
                 if ($field[0] === "text") {
-                    $fields[] = "`" . $field[1] . "` " . $field[0] . " indexed";
+                    $fields[] = "`".$field[1]."` ".$field[0]." indexed";
                 } elseif ($field[0] === 'url') {
                     $fields[] = "`{$field[1]}_host_path` text indexed";
                     $fields[] = "`{$field[1]}_query` text indexed";
                     $fields[] = "`{$field[1]}_anchor` text indexed";
                 } else {
-                    $fields[] = "`" . $field[1] . "` " . $field[0];
+                    $fields[] = "`".$field[1]."` ".$field[0];
                 }
             }
         }
