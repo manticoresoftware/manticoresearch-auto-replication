@@ -67,12 +67,17 @@ class ManticoreConnector
         }
     }
 
-    public function getTables($log = true): array
+    public function getTables($log = true, $typeFilter = null): array
     {
         $tables = [];
         $tablesStmt = $this->fetcher->fetch("show tables", $log);
 
         foreach ($tablesStmt as $row) {
+            if($typeFilter){
+                if(!in_array($row['Type'], $typeFilter)){
+                    continue;
+                }
+            }
             $tables[] = $row['Index'];
         }
 

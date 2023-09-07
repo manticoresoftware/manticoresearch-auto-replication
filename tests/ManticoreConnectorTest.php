@@ -74,6 +74,7 @@ class ManticoreConnectorTest extends TestCase
                         ]);
 
         $this->assertSame(['pq', 'tests'], $this->manticoreConnection->getTables());
+        $this->assertSame(['tests'], $this->manticoreConnection->getTables(false, ['rt']));
     }
 
     /**
