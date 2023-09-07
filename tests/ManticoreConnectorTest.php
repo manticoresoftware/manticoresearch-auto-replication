@@ -67,13 +67,13 @@ class ManticoreConnectorTest extends TestCase
     public function getTables()
     {
         $this->mock->shouldReceive('fetch')
-            ->withArgs(['show tables', true])
+            ->withArgs(['show tables', false])
             ->andReturn([
                             ['Index' => 'pq', 'Type' => 'percolate'],
                             ['Index' => 'tests', 'Type' => 'rt'],
                         ]);
 
-        $this->assertSame(['pq', 'tests'], $this->manticoreConnection->getTables());
+        $this->assertSame(['pq', 'tests'], $this->manticoreConnection->getTables(false));
         $this->assertSame(['tests'], $this->manticoreConnection->getTables(false, ['rt']));
     }
 
