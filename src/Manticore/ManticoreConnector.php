@@ -26,6 +26,10 @@ class ManticoreConnector
             $connection = null;
             mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
 
+            if ($maxAttempts < 0) {
+                $maxAttempts = 999999;
+            }
+
             for ($i = 0; $i <= $maxAttempts; $i++) {
                 try {
                     $connection = new mysqli($host.':'.$port, '', '', '');
@@ -73,8 +77,8 @@ class ManticoreConnector
         $tablesStmt = $this->fetcher->fetch("show tables", $log);
 
         foreach ($tablesStmt as $row) {
-            if($typeFilter){
-                if(!in_array($row['Type'], $typeFilter)){
+            if ($typeFilter) {
+                if (!in_array($row['Type'], $typeFilter)) {
                     continue;
                 }
             }
@@ -138,7 +142,7 @@ class ManticoreConnector
 
     public function getNotInClusterTables($tables = null): array
     {
-        if ($tables === null){
+        if ($tables === null) {
             $tables = $this->getTables();
         }
 
@@ -246,7 +250,8 @@ class ManticoreConnector
         return $this->fetcher->getConnectionError();
     }
 
-    protected function checkIsStatusLoaded(){
+    protected function checkIsStatusLoaded()
+    {
         if ($this->searchdStatus === []) {
             $this->getStatus();
         }
