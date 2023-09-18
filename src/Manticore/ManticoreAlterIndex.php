@@ -5,7 +5,7 @@ namespace Core\Manticore;
 use Analog\Analog;
 use RuntimeException;
 
-class ManticoreAlterIndex extends ManticoreStreamsConnector
+class ManticoreAlterIndex extends ManticoreConnector
 {
 
     /**
@@ -41,25 +41,23 @@ class ManticoreAlterIndex extends ManticoreStreamsConnector
     /**
      * @throws RuntimeException
      */
-    private function getCount($index): int
+    protected function getCount($index): int
     {
-        $result = $this->query(/* @sql manticore */'SELECT count(*) as cnt FROM '.$index);
+        $result = $this->fetcher->fetch(/* @sql manticore */'SELECT count(*) as cnt FROM '.$index);
         if ( ! $result) {
             throw new RuntimeException('Can\'t get index '.$index.' count. '.$this->getConnectionError());
         }
 
-        $result = $result->fetch_assoc();
-
-        return (int) $result['cnt'];
+        return (int) $result[0]['cnt'] ?? 0;
     }
 
-    private function getRows($index, $limit, $offset): array
+    protected function getRows($index, $limit, $offset)
     {
-        $query  = 'SELECT * FROM '.$index.' ORDER BY id ASC limit '.$limit.' offset '.$offset;
-        return $this->query($query)->fetch_all(MYSQLI_ASSOC);
+        $query  = /* @sql manticore */ 'SELECT * FROM '.$index.' ORDER BY id ASC limit '.$limit.' offset '.$offset;
+        return $this->fetcher->fetch($query);
     }
 
-    private function insertRows($index, $data, $inCluster = false): bool
+    protected function insertRows($index, $data, $inCluster = false): bool
     {
         $clusterAppend = '';
         if ($inCluster) {
@@ -74,16 +72,16 @@ class ManticoreAlterIndex extends ManticoreStreamsConnector
             foreach ($row as $keyName => $value) {
                 $keys[$keyName] = 1;
                 if ( ! isset($values[$i])) {
-                    $values[$i] = "'".$this->connection->escape_string($value)."'";
+                    $values[$i] = "'".$this->fetcher->escape_string($value)."'";
                 } else {
-                    $values[$i] .= ", '".$this->connection->escape_string($value)."'";
+                    $values[$i] .= ", '".$this->fetcher->escape_string($value)."'";
                 }
             }
         }
 
         if ($values !== []) {
             $query = "INSERT INTO ".$clusterAppend.$index." (`".implode('`,`', array_keys($keys))."`) VALUES (".implode('),(', $values).")";
-            $this->query($query, false);
+            $this->fetcher->query($query, false);
             return true;
         }
 
@@ -97,14 +95,14 @@ class ManticoreAlterIndex extends ManticoreStreamsConnector
     {
         if ($inCluster) {
             $sql = "ALTER CLUSTER ".$this->clusterName." DROP ".$index;
-            $this->query($sql);
+            $this->fetcher->query($sql);
             if ($this->getConnectionError()) {
                 throw new RuntimeException('Can\'t remove index '.$index.' from cluster. '.$this->getConnectionError());
             }
         }
 
         $sql = "DROP TABLE ".$index;
-        $this->query($sql);
+        $this->fetcher->query($sql);
         if ($this->getConnectionError()) {
             throw new RuntimeException('Can\'t drop index '.$index.' '.$this->getConnectionError());
         }

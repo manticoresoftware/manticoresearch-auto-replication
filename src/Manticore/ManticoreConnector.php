@@ -3,45 +3,52 @@
 namespace Core\Manticore;
 
 use Analog\Analog;
+use Exception;
 use mysqli;
+use RuntimeException;
 
 class ManticoreConnector
 {
+    protected ManticoreMysqliFetcher $fetcher;
 
-    protected int $maxAttempts;
-    protected mysqli $connection;
     protected string $clusterName = "";
     protected string $rtInclude;
     protected $fields;
     protected array $searchdStatus = [];
 
-    public function __construct($host, $port, $clusterName, $maxAttempts)
+    public function __construct($host, $port, $clusterName, $maxAttempts, $connect = true)
     {
-        $this->setMaxAttempts($maxAttempts);
-
         if (isset($clusterName)) {
             $this->clusterName = $clusterName.'_cluster';
         }
 
-        mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
+        if ($connect) {
+            $connection = null;
+            mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
 
-        for ($i = 0; $i <= $this->maxAttempts; $i++) {
-            try {
-                $this->connection = new mysqli($host.':'.$port, '', '', '');
-
-                if ( ! $this->connection->connect_errno) {
-                    break;
-                }
-            } catch (\Exception $exception) {
-                Analog::error("Manticore connect exception ($host:$port) ".$exception->getMessage());
+            if ($maxAttempts < 0) {
+                $maxAttempts = 999999;
             }
 
+            for ($i = 0; $i <= $maxAttempts; $i++) {
+                try {
+                    $connection = new mysqli($host.':'.$port, '', '', '');
 
-            sleep(1);
-        }
+                    if (!$connection->connect_errno) {
+                        break;
+                    }
+                } catch (Exception $exception) {
+                    Analog::error("Manticore connect exception ($host:$port) ".$exception->getMessage());
+                }
 
-        if ($this->connection == null || $this->connection->connect_errno) {
-            throw new \RuntimeException("Can't connect to Manticore at ".$host.':'.$port);
+                sleep(1);
+            }
+
+            if ($connection == null || $connection->connect_errno) {
+                throw new RuntimeException("Can't connect to Manticore at ".$host.':'.$port);
+            }
+
+            $this->fetcher = new ManticoreMysqliFetcher($connection, $maxAttempts);
         }
     }
 
@@ -52,27 +59,29 @@ class ManticoreConnector
 
     public function setMaxAttempts($maxAttempts): void
     {
-        if ($maxAttempts === -1) {
-            $maxAttempts = 999999999;
-        }
-        $this->maxAttempts = $maxAttempts;
+        $this->fetcher->setMaxAttempts($maxAttempts);
     }
 
     public function getStatus($log = true): void
     {
-        $clusterStatus = $this->fetch("show status", $log);
+        $clusterStatus = $this->fetcher->fetch("show status", $log);
 
         foreach ($clusterStatus as $row) {
             $this->searchdStatus[$row['Counter']] = $row['Value'];
         }
     }
 
-    public function getTables($log = true): array
+    public function getTables($log = true, $typeFilter = null): array
     {
-        $tables     = [];
-        $tablesStmt = $this->fetch("show tables", $log);
+        $tables = [];
+        $tablesStmt = $this->fetcher->fetch("show tables", $log);
 
         foreach ($tablesStmt as $row) {
+            if ($typeFilter) {
+                if (!in_array($row['Type'], $typeFilter)) {
+                    continue;
+                }
+            }
             $tables[] = $row['Index'];
         }
 
@@ -88,35 +97,27 @@ class ManticoreConnector
 
     public function checkClusterName(): bool
     {
-        if ($this->searchdStatus === []) {
-            $this->getStatus();
-        }
-
+        $this->checkIsStatusLoaded();
         return (isset($this->searchdStatus['cluster_name'])
-                && $this->searchdStatus['cluster_name'] === $this->clusterName) ?? false;
+            && $this->searchdStatus['cluster_name'] === $this->clusterName) ?? false;
     }
 
     public function getViewNodes()
     {
-        if ($this->searchdStatus === []) {
-            $this->getStatus();
-        }
-
+        $this->checkIsStatusLoaded();
         return $this->searchdStatus['cluster_'.$this->searchdStatus['cluster_name'].'_nodes_view'] ?? false;
     }
 
-    public function isClusterPrimary()
+    public function isClusterPrimary(): bool
     {
-        if ($this->searchdStatus === []) {
-            $this->getStatus();
-        }
-
-        return ($this->searchdStatus['cluster_'.$this->searchdStatus['cluster_name'].'_status'] === 'primary') ?? false;
+        $this->checkIsStatusLoaded();
+        return (isset($this->searchdStatus['cluster_'.$this->searchdStatus['cluster_name'].'_status']) &&
+            $this->searchdStatus['cluster_'.$this->searchdStatus['cluster_name'].'_status'] === 'primary') ?? false;
     }
 
     public function createCluster($log = true): bool
     {
-        $this->query('CREATE CLUSTER '.$this->clusterName, $log);
+        $this->fetcher->query('CREATE CLUSTER '.$this->clusterName, $log);
 
         if ($this->getConnectionError()) {
             return false;
@@ -139,9 +140,13 @@ class ManticoreConnector
         }
     }
 
-    public function getNotInClusterTables()
+    public function getNotInClusterTables($tables = null): array
     {
-        $tables = $this->getTables();
+        if ($tables === null) {
+            $tables = $this->getTables();
+        }
+
+        $this->checkIsStatusLoaded();
 
         $clusterTables = $this->searchdStatus['cluster_'.$this->clusterName.'_indexes'];
         if ($clusterTables === '') {
@@ -149,13 +154,16 @@ class ManticoreConnector
         }
 
         $clusterTables = explode(',', $clusterTables);
+        $clusterTables = array_map(function ($row) {
+            return trim($row);
+        }, $clusterTables);
 
         $notInClusterTables = [];
-        foreach ($clusterTables as $inClusterTable) {
-            $inClusterTable = trim($inClusterTable);
+        foreach ($tables as $table) {
+            $table = trim($table);
 
-            if ( ! in_array($inClusterTable, $tables)) {
-                $notInClusterTables[] = $inClusterTable;
+            if (!in_array($table, $clusterTables)) {
+                $notInClusterTables[] = $table;
             }
         }
 
@@ -164,7 +172,7 @@ class ManticoreConnector
 
     public function restoreCluster($log = true): bool
     {
-        $this->query("SET CLUSTER ".$this->clusterName." GLOBAL 'pc.bootstrap' = 1", $log);
+        $this->fetcher->query("SET CLUSTER ".$this->clusterName." GLOBAL 'pc.bootstrap' = 1", $log);
 
         if ($this->getConnectionError()) {
             return false;
@@ -182,7 +190,7 @@ class ManticoreConnector
         if ($this->checkClusterName()) {
             return true;
         }
-        $this->query('JOIN CLUSTER '.$this->clusterName.' at \''.$hostname.':9312\'', $log);
+        $this->fetcher->query('JOIN CLUSTER '.$this->clusterName.' at \''.$hostname.':9312\'', $log);
 
         if ($this->getConnectionError()) {
             return false;
@@ -197,7 +205,7 @@ class ManticoreConnector
 
     public function addTableToCluster($tableName, $log = true): bool
     {
-        $this->query("ALTER CLUSTER ".$this->clusterName." ADD ".$tableName, $log);
+        $this->fetcher->query("ALTER CLUSTER ".$this->clusterName." ADD ".$tableName, $log);
 
         if ($this->getConnectionError()) {
             return false;
@@ -209,82 +217,43 @@ class ManticoreConnector
         return true;
     }
 
-    protected function query($sql, $logQuery = true, $attempts = 0)
-    {
-        try {
-            if ($logQuery) {
-                Analog::log('Query: '.$sql);
-            }
-            $result = $this->connection->query($sql);
-
-        } catch (\Exception $exception) {
-            Analog::log("Exception until query processing. Query: ".$sql."\n. Error: ".$exception);
-            if ($attempts > $this->maxAttempts) {
-                throw new \RuntimeException("Can't process query ".$sql);
-            }
-        }
-
-
-        if ($this->getConnectionError()) {
-            Analog::log("Error until query processing. Query: ".$sql."\n. Error: ".$this->getConnectionError());
-            if ($attempts > $this->maxAttempts) {
-                throw new \RuntimeException("Can't process query ".$sql);
-            }
-
-            sleep(1);
-            $attempts++;
-
-            return $this->query($sql, $logQuery, $attempts);
-        }
-
-
-        return $result;
-    }
 
     public function reloadIndexes()
     {
-        return $this->query('RELOAD INDEXES');
+        return $this->fetcher->query('RELOAD INDEXES');
     }
 
     public function getChunksCount($index, $log = true): int
     {
-        $indexStatus = $this->fetch('SHOW INDEX '.$index.' STATUS', $log);
+        $indexStatus = $this->fetcher->fetch('SHOW INDEX '.$index.' STATUS', $log);
         foreach ($indexStatus as $row) {
             if ($row["Variable_name"] === 'disk_chunks') {
                 return (int)$row["Value"];
             }
         }
-        throw new \RuntimeException("Can't get chunks count");
+        throw new RuntimeException("Can't get chunks count");
     }
 
 
     public function optimize($index, $cutoff)
     {
-        return $this->query('OPTIMIZE INDEX '.$index.' OPTION cutoff='.$cutoff);
+        return $this->fetcher->query('OPTIMIZE INDEX '.$index.' OPTION cutoff='.$cutoff);
     }
 
     public function showThreads($log = true)
     {
-        return $this->fetch('SHOW THREADS option format=all', $log);
-    }
-
-    protected function fetch($query, $log = true)
-    {
-        $result = $this->query($query, $log);
-
-        if ( ! empty($result)) {
-            /** @var \mysqli_result $result */
-            $result = $result->fetch_all(MYSQLI_ASSOC);
-            if ($result !== null) {
-                return $result;
-            }
-        }
-
-        return false;
+        return $this->fetcher->fetch('SHOW THREADS option format=all', $log);
     }
 
     public function getConnectionError(): string
     {
-        return $this->connection->error;
+        return $this->fetcher->getConnectionError();
+    }
+
+    protected function checkIsStatusLoaded()
+    {
+        if ($this->searchdStatus === []) {
+            $this->getStatus();
+        }
     }
 }
