@@ -6,7 +6,6 @@ use Core\K8s\ApiClient;
 use Core\K8s\Resources;
 use Core\Notifications\NotificationStub;
 use JsonException;
-use PHPUnit\Framework\TestCase;
 use RuntimeException;
 
 class ResourcesTest extends TestCase

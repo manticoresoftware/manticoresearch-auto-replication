@@ -2,7 +2,7 @@
 
 namespace Core\Manticore;
 
-use Analog\Analog;
+use Core\Logger\Logger;
 use RuntimeException;
 
 class ManticoreAlterIndex extends ManticoreConnector
@@ -25,8 +25,7 @@ class ManticoreAlterIndex extends ManticoreConnector
             $rows = $this->getRows($from, $batch, $offset);
             $this->insertRows($to, $rows, $inCluster);
             $offset += $batch;
-            Analog::log("Processed (from $from to $to) : ".ceil($i / $maxIterations * 100)."%");
-
+            Logger::debug("Processed (from $from to $to) : ".ceil($i / $maxIterations * 100)."%");
         }
 
         $newIndexRowsCount = $this->getCount($to);

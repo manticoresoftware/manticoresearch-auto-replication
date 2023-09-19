@@ -2,7 +2,7 @@
 
 namespace Core\K8s;
 
-use Analog;
+use Core\Logger\Logger;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
 use GuzzleHttp\Psr7;
@@ -189,15 +189,15 @@ class ApiClient
         try {
             return $this->httpClient->request($method, $url, $params);
         } catch (RequestException $e) {
-            Analog::log(Psr7\Message::toString($e->getRequest()));
+            Logger::error(Psr7\Message::toString($e->getRequest()));
 
             if ($e->hasResponse()) {
-                Analog::log(Psr7\Message::toString($e->getResponse()));
+                Logger::error(Psr7\Message::toString($e->getResponse()));
             }
 
             $this->terminate(1);
         } catch (GuzzleException $e) {
-            Analog::log($e->getMessage());
+            Logger::error($e->getMessage());
             $this->terminate(1);
         }
         return null;

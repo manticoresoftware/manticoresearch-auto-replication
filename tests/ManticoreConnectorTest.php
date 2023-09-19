@@ -2,10 +2,8 @@
 
 namespace Tests;
 
-use Core\Cache\Cache;
 use Core\Manticore\ManticoreConnector;
 use Core\Manticore\ManticoreMysqliFetcher;
-use PHPUnit\Framework\TestCase;
 use RuntimeException;
 use Tests\Traits\ManticoreConnectorTrait;
 

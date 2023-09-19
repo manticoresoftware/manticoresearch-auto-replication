@@ -2,7 +2,7 @@
 
 namespace Core\Mutex;
 
-use Analog\Analog;
+use Core\Logger\Logger;
 use Core\Manticore\ManticoreConnector;
 
 class Locker
@@ -23,7 +23,7 @@ class Locker
     public function checkLock(): bool
     {
         if (!flock($this->fp, LOCK_EX | LOCK_NB)) {
-            Analog::log("Another process $this->name is already running");
+            Logger::warning("Another process $this->name is already running");
             $this->unlock();
         }
 
@@ -67,7 +67,8 @@ class Locker
         file_put_contents($this->optimizeLockFile, $ip);
     }
 
-    protected function terminate($exitStatus){
+    protected function terminate($exitStatus)
+    {
         exit($exitStatus);
     }
 

@@ -3,7 +3,7 @@
 namespace Core\Manticore;
 
 
-use Analog;
+use Core\Logger\Logger;
 use Core\Notifications\NotificationInterface;
 
 class ManticoreStreamsJson extends ManticoreJson
@@ -17,19 +17,19 @@ class ManticoreStreamsJson extends ManticoreJson
         $this->notification = $notification;
         $testsIndexMetadata = '/var/lib/manticore/tests/tests.meta';
         if (!file_exists($testsIndexMetadata)){
-            Analog::log('Tests metadata not found');
+            Logger::warning('Tests metadata not found');
         }
 
         $this->restoreExistingIndexes();
     }
 
     /**
+     * @return void
+     * @throws \JsonException
      * @deprecated
      *
      * this method is deprecated because this error stopped happening
      *
-     * @return void
-     * @throws \JsonException
      */
     protected function restoreExistingIndexes(): void
     {
@@ -43,8 +43,10 @@ class ManticoreStreamsJson extends ManticoreJson
                 if ($this->checkIndexFilesExist($index)) {
                     $updated = true;
                     $this->conf["indexes"][$index] = ['type' => $type, 'path' => $index];
-                    Analog::info('Index '.$index.' ('.$type.') was returned in manticore.json');
-                    $this->notification->sendMessage('Index '.$index.' ('.$type.') in cluster '.$this->clusterName.' was returned in manticore.json');
+                    Logger::warning('Index '.$index.' ('.$type.') was returned in manticore.json');
+                    $this->notification->sendMessage(
+                        'Index '.$index.' ('.$type.') in cluster '.$this->clusterName.' was returned in manticore.json'
+                    );
                 }
             }
 
