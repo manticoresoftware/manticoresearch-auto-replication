@@ -202,6 +202,23 @@ class ManticoreConnector
         return true;
     }
 
+    public function deleteCluster(): bool
+    {
+        if (!$this->checkClusterName()) {
+            return true;
+        }
+        $this->fetcher->query('DELETE CLUSTER '.$this->clusterName, false);
+
+        if ($this->getConnectionError()) {
+            return false;
+        }
+
+        $this->searchdStatus = [];
+        $this->getStatus();
+
+        return true;
+    }
+
 
     public function addTableToCluster($tableName, $log = true): bool
     {
