@@ -33,24 +33,24 @@ class Logger
         self::getInstance()->pushHandler($handler);
     }
 
-    public static function debug($message)
+    public static function debug($message, $context=[])
     {
-        self::getInstance()->debug($message);
+        self::getInstance()->debug($message, $context);
     }
 
-    public static function info($message)
+    public static function info($message, $context=[])
     {
-        self::getInstance()->info($message);
+        self::getInstance()->info($message, $context);
     }
 
-    public static function warning($message)
+    public static function warning($message, $context=[])
     {
-        self::getInstance()->warning($message);
+        self::getInstance()->warning($message, $context);
     }
 
 
-    public static function error($message)
+    public static function error($message, $context=[])
     {
-        self::getInstance()->error($message);
+        self::getInstance()->error($message, $context);
     }
 }
