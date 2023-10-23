@@ -2,7 +2,7 @@
 
 namespace Core\Manticore;
 
-use Analog\Analog;
+use Core\Logger\Logger;
 use Exception;
 use mysqli;
 use RuntimeException;
@@ -38,7 +38,7 @@ class ManticoreConnector
                         break;
                     }
                 } catch (Exception $exception) {
-                    Analog::error("Manticore connect exception ($host:$port) ".$exception->getMessage());
+                    Logger::warning("Manticore connect exception ($host:$port) ".$exception->getMessage());
                 }
 
                 sleep(1);
@@ -135,7 +135,7 @@ class ManticoreConnector
         if ($notInClusterTables !== []) {
             foreach ($notInClusterTables as $table) {
                 $this->addTableToCluster($table);
-                Analog::log("Table $table was added into cluster");
+                Logger::info("Table $table was added into cluster");
             }
         }
     }
@@ -191,6 +191,23 @@ class ManticoreConnector
             return true;
         }
         $this->fetcher->query('JOIN CLUSTER '.$this->clusterName.' at \''.$hostname.':9312\'', $log);
+
+        if ($this->getConnectionError()) {
+            return false;
+        }
+
+        $this->searchdStatus = [];
+        $this->getStatus();
+
+        return true;
+    }
+
+    public function deleteCluster(): bool
+    {
+        if (!$this->checkClusterName()) {
+            return true;
+        }
+        $this->fetcher->query('DELETE CLUSTER '.$this->clusterName, false);
 
         if ($this->getConnectionError()) {
             return false;

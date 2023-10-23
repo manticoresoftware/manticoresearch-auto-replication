@@ -2,13 +2,13 @@
 
 namespace Core\Notifications;
 
-use Analog\Analog;
+use Core\Logger\Logger;
 
 class NotificationStub implements NotificationInterface
 {
     public function sendMessage($message): bool
     {
-        Analog::log("Notification: ".$message);
+        Logger::info("Notification: ".$message);
         return false;
     }
 }

@@ -5,7 +5,6 @@ namespace Tests;
 use Core\Manticore\ManticoreAlterIndex;
 use Core\Manticore\ManticoreMysqliFetcher;
 use Mockery;
-use PHPUnit\Framework\TestCase;
 use RuntimeException;
 use Tests\Traits\ManticoreConnectorTrait;
 

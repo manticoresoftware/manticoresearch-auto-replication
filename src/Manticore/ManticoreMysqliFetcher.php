@@ -2,14 +2,13 @@
 
 namespace Core\Manticore;
 
-use Analog\Analog;
+use Core\Logger\Logger;
 use Exception;
 use mysqli;
 use RuntimeException;
 
 class ManticoreMysqliFetcher
 {
-
     protected int $maxAttempts = 0;
 
     private mysqli $connection;
@@ -20,7 +19,8 @@ class ManticoreMysqliFetcher
         $this->connection = $connection;
     }
 
-    public function setMaxAttempts(int $attempts){
+    public function setMaxAttempts(int $attempts)
+    {
         $this->maxAttempts = $attempts;
     }
 
@@ -28,11 +28,11 @@ class ManticoreMysqliFetcher
     {
         try {
             if ($logQuery) {
-                Analog::log('Query: '.$sql);
+                Logger::debug('Query: '.$sql);
             }
             $result = $this->connection->query($sql);
         } catch (Exception $exception) {
-            Analog::log("Exception until query processing. Query: ".$sql."\n. Error: ".$exception);
+            Logger::error("Exception until query processing. Query: ".$sql."\n. Error: ".$exception);
             if ($attempt > $this->maxAttempts) {
                 throw new RuntimeException("Can't process query ".$sql);
             }
@@ -40,7 +40,7 @@ class ManticoreMysqliFetcher
 
 
         if ($this->getConnectionError()) {
-            Analog::log("Error until query processing. Query: ".$sql."\n. Error: ".$this->getConnectionError());
+            Logger::error("Error until query processing. Query: ".$sql."\n. Error: ".$this->getConnectionError());
             if ($attempt > $this->maxAttempts) {
                 throw new RuntimeException("Can't process query ".$sql);
             }

@@ -2,10 +2,8 @@
 
 namespace Tests;
 
-use Core\Cache\Cache;
 use Core\Manticore\ManticoreConnector;
 use Core\Manticore\ManticoreMysqliFetcher;
-use PHPUnit\Framework\TestCase;
 use RuntimeException;
 use Tests\Traits\ManticoreConnectorTrait;
 
@@ -570,6 +568,86 @@ class ManticoreConnectorTest extends TestCase
             ->andReturn("Some error");
 
         $result = $this->manticoreConnection->joinCluster('other_host');
+
+        $this->assertFalse($result);
+    }
+
+
+
+    /**
+     * @test
+     * @return void
+     */
+
+    public function deleteCluster()
+    {
+        $answer = $this->getDefaultStatusAnswer();
+
+
+        $this->mock->shouldReceive('fetch')
+            ->twice()
+            ->withArgs(['show status', true])
+            ->andReturn($answer);
+
+        $this->mock->shouldReceive('query')
+            ->withArgs(["DELETE CLUSTER ".self::CLUSTER_NAME."_cluster", false])
+            ->andReturnNull();
+
+        $this->mock->shouldReceive('getConnectionError')
+            ->andReturn(false);
+
+        $result = $this->manticoreConnection->deleteCluster();
+
+        $this->assertTrue($result);
+    }
+
+
+    /**
+     * @test
+     * @return void
+     */
+
+    public function deleteClusterNotInitJoinInCaseAlreadyRemoved()
+    {
+        $answer = $this->getDefaultStatusAnswer();
+
+        foreach ($answer as $k => $v) {
+            if ($v['Counter'] === 'cluster_name') {
+                $answer[$k]['Value'] = '';
+            }
+        }
+
+        $this->mock->shouldReceive('fetch')
+            ->withArgs(['show status', true])
+            ->andReturn($answer);
+
+        $result = $this->manticoreConnection->deleteCluster();
+
+        $this->assertTrue($result);
+    }
+
+    /**
+     * @test
+     * @return void
+     */
+
+    public function deleteClusterReturnFalseOnConnectionError()
+    {
+        $answer = $this->getDefaultStatusAnswer();
+
+        $this->mock->shouldReceive('fetch')
+            ->once()
+            ->withArgs(['show status', true])
+            ->andReturn($answer);
+
+        $this->mock->shouldReceive('query')
+            ->withArgs(["DELETE CLUSTER ".self::CLUSTER_NAME."_cluster", false])
+            ->andReturnNull();
+
+        $this->mock->shouldReceive('getConnectionError')
+            ->andReturn("Some error");
+
+        $result = $this->manticoreConnection->deleteCluster();
 
         $this->assertFalse($result);
     }

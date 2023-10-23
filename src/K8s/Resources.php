@@ -2,7 +2,7 @@
 
 namespace Core\K8s;
 
-use Analog\Analog;
+use Core\Logger\Logger;
 use Core\Notifications\NotificationInterface;
 use Exception;
 
@@ -34,7 +34,7 @@ class Resources
         if (!$this->pods) {
             $pods = $this->api->getManticorePods($this->getLabels());
             if (!isset($pods['items'])) {
-                Analog::log('K8s api don\'t respond');
+                Logger::error('K8s api don\'t respond');
                 $this->terminate(1);
             }
 
@@ -58,7 +58,8 @@ class Resources
                     $this->notification->sendMessage(
                         "Bad pod phase for ".$pod['metadata']['name'].' phase '.$pod['status']['phase']
                     );
-                    Analog::log('Error pod phase '.json_encode($pod));
+                    Logger::warning("Wrong pod phase");
+                    Logger::debug('Error pod phase '.json_encode($pod));
                 }
             }
         }
@@ -226,7 +227,7 @@ class Resources
     {
         $pods = $this->api->getManticorePods($this->getLabels());
         if (!isset($pods['items'])) {
-            Analog::log('K8s api don\'t respond');
+            Logger::error('K8s api don\'t respond');
             $this->terminate(1);
         }
 
@@ -262,7 +263,7 @@ class Resources
                 }
             }
         } catch (Exception $e) {
-            Analog::log($e->getMessage());
+            Logger::error($e->getMessage());
         }
 
         sleep(1);

@@ -2,8 +2,8 @@
 
 namespace Core\Manticore;
 
-use Analog\Analog;
 use Core\K8s\Resources;
+use Core\Logger\Logger;
 
 class ManticoreJson
 {
@@ -65,7 +65,8 @@ class ManticoreJson
 
     public function updateNodesList(array $nodesList): void
     {
-        Analog::log("Update nodes list ".json_encode($nodesList));
+        Logger::info("Update nodes list");
+        Logger::debug("Update nodes list ".json_encode($nodesList));
         if ($nodesList !== []) {
             $newNodes = implode(',', $nodesList);
 
@@ -109,12 +110,12 @@ class ManticoreJson
             try {
                 $connection = $this->getManticoreConnection($hostname, $port, $shortClusterName, $attempts);
                 if (!$connection->checkClusterName()) {
-                    Analog::log("Cluster name mismatch at $hostname");
+                    Logger::warning("Cluster name mismatch at $hostname");
                     continue;
                 }
                 $availableNodes[] = $hostname.':'.$this->binaryPort;
             } catch (\RuntimeException $exception) {
-                Analog::log("Node at $hostname no more available\n".$exception->getMessage());
+                Logger::error("Node at $hostname no more available\n".$exception->getMessage());
             }
         }
 
@@ -137,7 +138,7 @@ class ManticoreJson
                     $nonPrimaryNodesCount++;
                 }
             } catch (\RuntimeException $exception) {
-                Analog::log("Node at $ip no more available\n".$exception->getMessage());
+                Logger::error("Node at $ip no more available\n".$exception->getMessage());
             }
         }
 
@@ -153,7 +154,7 @@ class ManticoreJson
         if (file_exists($this->path)) {
             try {
                 $manticoreJson = file_get_contents($this->path);
-                Analog::debug("Manticore json content: ".$manticoreJson);
+                Logger::debug("Manticore json content: ".$manticoreJson);
                 return json_decode($manticoreJson, true);
             } catch (\Exception $exception) {
                 return [];
@@ -168,7 +169,8 @@ class ManticoreJson
      */
     protected function saveConf(): void
     {
-        Analog::log("Save manticore.json ".json_encode($this->conf));
+        Logger::info("Save manticore.json");
+        Logger::debug("Save manticore.json ".json_encode($this->conf));
         file_put_contents($this->path, json_encode($this->conf, JSON_THROW_ON_ERROR | JSON_PRETTY_PRINT));
     }
 }

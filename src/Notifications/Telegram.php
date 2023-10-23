@@ -2,7 +2,7 @@
 
 namespace Core\Notifications;
 
-use Analog\Analog;
+use Core\Logger\Logger;
 use GuzzleHttp\Client;
 
 class Telegram implements NotificationInterface
@@ -21,7 +21,7 @@ class Telegram implements NotificationInterface
      */
     public function sendMessage($message): bool
     {
-        Analog::log("Notification: ".$message);
+        Logger::info("Notification: ".$message);
         $url      = "https://api.telegram.org/bot".$this->token."/sendMessage?chat_id=".$this->chatId;
         $url      .= "&text=".urlencode($message);
 

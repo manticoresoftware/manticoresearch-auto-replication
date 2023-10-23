@@ -2,6 +2,8 @@
 
 namespace Core\Manticore;
 
+use Core\Logger\Logger;
+
 class ManticoreStreamsConnector extends ManticoreConnector
 {
     public const PQ_INDEX_NAME = 'pq';
@@ -69,7 +71,7 @@ class ManticoreStreamsConnector extends ManticoreConnector
                 }
 
                 foreach ($errors as $error) {
-                    \Analog::warning($error);
+                    Logger::error($error);
                 }
 
                 return false;
@@ -92,7 +94,7 @@ class ManticoreStreamsConnector extends ManticoreConnector
             }
 
             foreach ($errors as $error) {
-                \Analog::warning($error);
+                Logger::error($error);
             }
 
             return false;

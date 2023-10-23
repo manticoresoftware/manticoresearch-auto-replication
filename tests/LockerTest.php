@@ -4,7 +4,7 @@ namespace Tests;
 
 use Core\Manticore\ManticoreConnector;
 use Core\Mutex\Locker;
-use PHPUnit\Framework\TestCase;
+
 
 class LockerTest extends TestCase
 {

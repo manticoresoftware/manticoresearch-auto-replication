@@ -5,7 +5,6 @@ namespace Tests;
 use Core\Manticore\ManticoreMysqliFetcher;
 use Core\Manticore\ManticoreStreamsConnector;
 use Mockery;
-use PHPUnit\Framework\TestCase;
 use RuntimeException;
 use Tests\Traits\ManticoreConnectorTrait;
 
