@@ -234,6 +234,26 @@ class ManticoreConnector
         return true;
     }
 
+    public function showSettings($log = false): array
+    {
+        $settings = $this->fetcher->fetch("show settings", $log);
+
+        if ($this->getConnectionError()) {
+            return [];
+        }
+
+        $searchdSettings = [];
+        foreach ($settings as $row) {
+            if ($row['Setting_name'] === 'searchd.listen'){
+                $searchdSettings[$row['Setting_name']][] = $row['Value'];
+                continue;
+            }
+            $searchdSettings[$row['Setting_name']] = $row['Value'];
+        }
+
+
+        return $searchdSettings;
+    }
 
     public function reloadIndexes()
     {

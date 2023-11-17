@@ -573,7 +573,6 @@ class ManticoreConnectorTest extends TestCase
     }
 
 
-
     /**
      * @test
      * @return void
@@ -707,6 +706,78 @@ class ManticoreConnectorTest extends TestCase
         $this->assertNull($result);
     }
 
+
+    /**
+     * @test
+     *
+     * @return void
+     */
+    public function showSettings()
+    {
+        $this->mock->shouldReceive('fetch')
+            ->withArgs(['show settings', false])
+            ->andReturn(
+                [
+                    ['Setting_name' => 'configuration_file', 'Value' => '/etc/manticoresearch/envreader.sh'],
+                    ['Setting_name' => 'worker_pid', 'Value' => '1'],
+                    ['Setting_name' => 'searchd.query_log_format', 'Value' => 'sphinxql'],
+                    ['Setting_name' => 'searchd.listen', 'Value' => '9306:mysql41'],
+                    ['Setting_name' => 'searchd.listen', 'Value' => '/var/run/mysqld/mysqld.sock:mysql41'],
+                    ['Setting_name' => 'searchd.listen', 'Value' => '9308:http'],
+                    ['Setting_name' => 'searchd.listen', 'Value' => '172.17.0.2:9312'],
+                    ['Setting_name' => 'searchd.listen', 'Value' => '172.17.0.2:9315-9325:replication'],
+                    ['Setting_name' => 'searchd.max_packet_size', 'Value' => '128M'],
+                    ['Setting_name' => 'searchd.log', 'Value' => '/var/log/manticore/searchd.log'],
+                    ['Setting_name' => 'searchd.pid_file', 'Value' => '/var/run/manticore/searchd.pid'],
+                    ['Setting_name' => 'searchd.data_dir', 'Value' => '/var/lib/manticore'],
+                    ['Setting_name' => 'searchd.binlog_path', 'Value' => '/var/lib/manticore/binlog'],
+                    ['Setting_name' => 'common.plugin_dir', 'Value' => '/usr/local/lib/manticore']
+                ]
+            );
+
+        $this->mock->shouldReceive('getConnectionError')->andReturn(false);
+
+        $result = $this->manticoreConnection->showSettings();
+        $this->assertSame(
+            $result,
+            [
+                'configuration_file' => '/etc/manticoresearch/envreader.sh',
+                'worker_pid' => '1',
+                'searchd.query_log_format' => 'sphinxql',
+                'searchd.listen' => [
+                    '9306:mysql41',
+                    '/var/run/mysqld/mysqld.sock:mysql41',
+                    '9308:http',
+                    '172.17.0.2:9312',
+                    '172.17.0.2:9315-9325:replication'
+                ],
+                'searchd.max_packet_size' => '128M',
+                'searchd.log' => '/var/log/manticore/searchd.log',
+                'searchd.pid_file' => '/var/run/manticore/searchd.pid',
+                'searchd.data_dir' => '/var/lib/manticore',
+                'searchd.binlog_path' => '/var/lib/manticore/binlog',
+                'common.plugin_dir' => '/usr/local/lib/manticore'
+            ]
+        );
+    }
+
+
+    /**
+     * @test
+     *
+     * @return void
+     */
+    public function showSettingsConnectionError()
+    {
+        $this->mock->shouldReceive('fetch')
+            ->withArgs(['show settings', false])
+            ->andReturnNull();
+
+        $this->mock->shouldReceive('getConnectionError')->andReturn(true);
+
+        $result = $this->manticoreConnection->showSettings();
+        $this->assertEmpty($result);
+    }
 
     /**
      * @test
