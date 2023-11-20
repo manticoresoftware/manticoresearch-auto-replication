@@ -89,6 +89,11 @@ class ManticoreJson
         exec('supervisorctl start searchd');
     }
 
+    public function stopManticore()
+    {
+        exec('supervisorctl stop searchd');
+    }
+
     public function checkNodesAvailability(Resources $resources, $port, $shortClusterName, $attempts): void
     {
         $nodes = $resources->getPodsFullHostnames();
