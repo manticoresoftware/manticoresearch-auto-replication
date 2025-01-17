@@ -67,8 +67,8 @@ class ManticoreConnectorTest extends TestCase
         $this->mock->shouldReceive('fetch')
             ->withArgs(['show tables', false])
             ->andReturn([
-                            ['Index' => 'pq', 'Type' => 'percolate'],
-                            ['Index' => 'tests', 'Type' => 'rt'],
+                            ['Table' => 'pq', 'Type' => 'percolate'],
+                            ['Table' => 'tests', 'Type' => 'rt'],
                         ]);
 
         $this->assertSame(['pq', 'tests'], $this->manticoreConnection->getTables(false));
@@ -84,8 +84,8 @@ class ManticoreConnectorTest extends TestCase
         $this->mock->shouldReceive('fetch')
             ->withArgs(['show tables', true])
             ->andReturn([
-                            ['Index' => 'pq', 'Type' => 'percolate'],
-                            ['Index' => 'tests', 'Type' => 'rt'],
+                            ['Table' => 'pq', 'Type' => 'percolate'],
+                            ['Table' => 'tests', 'Type' => 'rt'],
                         ]);
 
         $this->assertTrue($this->manticoreConnection->isTableExist('tests'));
@@ -101,8 +101,8 @@ class ManticoreConnectorTest extends TestCase
         $this->mock->shouldReceive('fetch')
             ->withArgs(['show tables', true])
             ->andReturn([
-                            ['Index' => 'pq', 'Type' => 'percolate'],
-                            ['Index' => 'tests', 'Type' => 'rt'],
+                            ['Table' => 'pq', 'Type' => 'percolate'],
+                            ['Table' => 'tests', 'Type' => 'rt'],
                         ]);
 
         $this->assertFalse($this->manticoreConnection->isTableExist('Tests'));
@@ -117,8 +117,8 @@ class ManticoreConnectorTest extends TestCase
         $this->mock->shouldReceive('fetch')
             ->withArgs(['show tables', true])
             ->andReturn([
-                            ['Index' => 'pq', 'Type' => 'percolate'],
-                            ['Index' => 'tests', 'Type' => 'rt'],
+                            ['Table' => 'pq', 'Type' => 'percolate'],
+                            ['Table' => 'tests', 'Type' => 'rt'],
                         ]);
 
         $this->assertFalse($this->manticoreConnection->isTableExist('NonExistTable'));
@@ -306,8 +306,8 @@ class ManticoreConnectorTest extends TestCase
     {
         $this->mock->shouldReceive('fetch')
             ->andReturn([
-                            ['Index' => 'pq', 'Type' => 'percolate'],
-                            ['Index' => 'tests', 'Type' => 'rt'],
+                            ['Table' => 'pq', 'Type' => 'percolate'],
+                            ['Table' => 'tests', 'Type' => 'rt'],
                         ], $this->getDefaultStatusAnswer());
 
         $this->assertSame([], $this->manticoreConnection->getNotInClusterTables());
@@ -322,9 +322,9 @@ class ManticoreConnectorTest extends TestCase
     {
         $this->mock->shouldReceive('fetch')
             ->andReturn([
-                            ['Index' => 'pq', 'Type' => 'percolate'],
-                            ['Index' => 'tests', 'Type' => 'rt'],
-                            ['Index' => 'not_in_cluster_table', 'Type' => 'rt'],
+                            ['Table' => 'pq', 'Type' => 'percolate'],
+                            ['Table' => 'tests', 'Type' => 'rt'],
+                            ['Table' => 'not_in_cluster_table', 'Type' => 'rt'],
                         ], $this->getDefaultStatusAnswer());
 
         $this->assertSame(['not_in_cluster_table'], $this->manticoreConnection->getNotInClusterTables());
@@ -346,9 +346,9 @@ class ManticoreConnectorTest extends TestCase
 
         $this->mock->shouldReceive('fetch')
             ->andReturn([
-                            ['Index' => 'pq', 'Type' => 'percolate'],
-                            ['Index' => 'tests', 'Type' => 'rt'],
-                            ['Index' => 'not_in_cluster_table', 'Type' => 'rt'],
+                            ['Table' => 'pq', 'Type' => 'percolate'],
+                            ['Table' => 'tests', 'Type' => 'rt'],
+                            ['Table' => 'not_in_cluster_table', 'Type' => 'rt'],
                         ], $answer);
 
         $this->assertSame(['pq', 'tests', 'not_in_cluster_table'], $this->manticoreConnection->getNotInClusterTables());
@@ -401,13 +401,13 @@ class ManticoreConnectorTest extends TestCase
      * @test
      * @return void
      */
-    public function reloadIndexes()
+    public function reloadTables()
     {
         $this->mock->shouldReceive('query')
-            ->withArgs(['RELOAD INDEXES'])
+            ->withArgs(['RELOAD TABLES'])
             ->andReturn(true);
 
-        $this->assertTrue($this->manticoreConnection->reloadIndexes());
+        $this->assertTrue($this->manticoreConnection->reloadTables());
     }
 
 
@@ -428,8 +428,8 @@ class ManticoreConnectorTest extends TestCase
         $this->mock->shouldReceive('fetch')
             ->withArgs(['show tables', true])
             ->andReturn([
-                            ['Index' => 'pq', 'Type' => 'percolate'],
-                            ['Index' => 'tests', 'Type' => 'rt'],
+                            ['Table' => 'pq', 'Type' => 'percolate'],
+                            ['Table' => 'tests', 'Type' => 'rt'],
                         ], $answer);
 
         $this->mock->shouldReceive('fetch')
@@ -658,16 +658,16 @@ class ManticoreConnectorTest extends TestCase
      */
     public function getChunksCount()
     {
-        $indexStatus = [
+        $tableStatus = [
             ['Variable_name' => 'disk_chunks', 'Value' => '10'],
             ['Variable_name' => 'other_variable', 'Value' => '20']
         ];
 
         $this->mock->shouldReceive('fetch')
-            ->withArgs(['SHOW INDEX my_index STATUS', true])
-            ->andReturn($indexStatus);
+            ->withArgs(['SHOW TABLE my_table STATUS', true])
+            ->andReturn($tableStatus);
 
-        $result = $this->manticoreConnection->getChunksCount('my_index');
+        $result = $this->manticoreConnection->getChunksCount('my_table');
         $this->assertEquals(10, $result);
     }
 
@@ -679,15 +679,15 @@ class ManticoreConnectorTest extends TestCase
     public function getChunksCountThrowsExceptionIfNoChunks()
     {
         $this->expectException(RuntimeException::class);
-        $indexStatus = [
+        $tableStatus = [
             ['Variable_name' => 'other_variable', 'Value' => '20']
         ];
 
         $this->mock->shouldReceive('fetch')
-            ->withArgs(['SHOW INDEX my_index STATUS', true])
-            ->andReturn($indexStatus);
+            ->withArgs(['SHOW TABLE my_table STATUS', true])
+            ->andReturn($tableStatus);
 
-        $this->manticoreConnection->getChunksCount('my_index');
+        $this->manticoreConnection->getChunksCount('my_table');
     }
 
 
@@ -699,10 +699,10 @@ class ManticoreConnectorTest extends TestCase
     public function optimize()
     {
         $this->mock->shouldReceive('query')
-            ->withArgs(['OPTIMIZE INDEX my_index OPTION cutoff=0.5'])
+            ->withArgs(['OPTIMIZE TABLE my_table OPTION cutoff=0.5'])
             ->andReturnNull();
 
-        $result = $this->manticoreConnection->optimize('my_index', 0.5);
+        $result = $this->manticoreConnection->optimize('my_table', 0.5);
         $this->assertNull($result);
     }
 

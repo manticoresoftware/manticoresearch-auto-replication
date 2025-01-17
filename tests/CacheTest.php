@@ -8,7 +8,7 @@ use Core\Cache\Cache;
 class CacheTest extends TestCase
 {
 
-    private string $cacheStorageFile = DIRECTORY_SEPARATOR.'tmp'.DIRECTORY_SEPARATOR.'index_hash.dat';
+    private string $cacheStorageFile = DIRECTORY_SEPARATOR.'tmp'.DIRECTORY_SEPARATOR.'table_hash.dat';
 
     /**
      * @test
@@ -63,9 +63,9 @@ class CacheTest extends TestCase
     public function assertCacheKeyNames(): void
     {
         $keys = [
-            'INDEX_HASH' => 'index_hash',
+            'TABLE_HASH' => 'table_hash',
             'CHECKED_WORKERS' => 'checked_workers',
-            'CHECKED_INDEXES' => 'checked_indexes',
+            'CHECKED_TABLES' => 'checked_tables',
         ];
         foreach ($keys as $constName => $expectedContent) {
             $this->assertSame($expectedContent, constant("Core\Cache\Cache::$constName"));

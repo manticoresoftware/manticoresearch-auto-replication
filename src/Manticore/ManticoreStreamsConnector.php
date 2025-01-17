@@ -6,21 +6,21 @@ use Core\Logger\Logger;
 
 class ManticoreStreamsConnector extends ManticoreConnector
 {
-    public const PQ_INDEX_NAME = 'pq';
-    public const TESTS_INDEX_NAME = 'tests';
-    public const INDEX_TYPE_PERCOLATE = 'percolate';
-    public const INDEX_TYPE_RT = 'rt';
+    public const PQ_TABLE_NAME = 'pq';
+    public const TESTS_TABLE_NAME = 'tests';
+    public const TABLE_TYPE_PERCOLATE = 'percolate';
+    public const TABLE_TYPE_RT = 'rt';
 
-    public const INDEX_LIST = [self::PQ_INDEX_NAME, self::TESTS_INDEX_NAME];
-    public const INDEX_TYPES = [
-        self::PQ_INDEX_NAME => self::INDEX_TYPE_PERCOLATE,
-        self::TESTS_INDEX_NAME => self::INDEX_TYPE_RT
+    public const TABLES_LIST = [self::PQ_TABLE_NAME, self::TESTS_TABLE_NAME];
+    public const TABLE_TYPES = [
+        self::PQ_TABLE_NAME => self::TABLE_TYPE_PERCOLATE,
+        self::TESTS_TABLE_NAME => self::TABLE_TYPE_RT
     ];
 
 
     public function createTable($tableName, $type): bool
     {
-        if (!in_array($type, [self::INDEX_TYPE_PERCOLATE, self::INDEX_TYPE_RT])) {
+        if (!in_array($type, [self::TABLE_TYPE_PERCOLATE, self::TABLE_TYPE_RT])) {
             throw new \RuntimeException('Wrong table type '.$type);
         }
 
@@ -52,17 +52,17 @@ class ManticoreStreamsConnector extends ManticoreConnector
         $this->checkIsStatusLoaded();
         $errors = [];
         if ($this->checkClusterName()) {
-            $nonClusterTables = $this->getNotInClusterTables(self::INDEX_LIST);
+            $nonClusterTables = $this->getNotInClusterTables(self::TABLES_LIST);
             if ($nonClusterTables !== []) {
-                foreach ($nonClusterTables as $indexName) {
-                    if (!$this->isTableExist($indexName)) {
-                        if (!$this->createTable($indexName, self::INDEX_TYPES[$indexName])) {
-                            $errors[] = "Can't create table $indexName";
+                foreach ($nonClusterTables as $tableName) {
+                    if (!$this->isTableExist($tableName)) {
+                        if (!$this->createTable($tableName, self::TABLE_TYPES[$tableName])) {
+                            $errors[] = "Can't create table $tableName";
                             continue;
                         }
                     }
-                    if (!$this->addTableToCluster($indexName)) {
-                        $errors[] = "Can't add table $indexName to cluster ".$this->clusterName;
+                    if (!$this->addTableToCluster($tableName)) {
+                        $errors[] = "Can't add table $tableName to cluster ".$this->clusterName;
                     }
                 }
 
@@ -79,13 +79,13 @@ class ManticoreStreamsConnector extends ManticoreConnector
 
             return true;
         } elseif (!$this->checkClusterName() && $this->createCluster()) {
-            foreach ([self::PQ_INDEX_NAME, self::TESTS_INDEX_NAME] as $indexName) {
-                if (!$this->createTable($indexName, self::INDEX_TYPES[$indexName])) {
-                    $errors[] = "Can't create table $indexName";
+            foreach ([self::PQ_TABLE_NAME, self::TESTS_TABLE_NAME] as $tableName) {
+                if (!$this->createTable($tableName, self::TABLE_TYPES[$tableName])) {
+                    $errors[] = "Can't create table $tableName";
                     continue;
                 }
-                if (!$this->addTableToCluster($indexName)) {
-                    $errors[] = "Can't add table $indexName to cluster ".$this->clusterName;
+                if (!$this->addTableToCluster($tableName)) {
+                    $errors[] = "Can't add table $tableName to cluster ".$this->clusterName;
                 }
             }
 

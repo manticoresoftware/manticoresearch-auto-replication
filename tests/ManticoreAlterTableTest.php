@@ -2,13 +2,13 @@
 
 namespace Tests;
 
-use Core\Manticore\ManticoreAlterIndex;
+use Core\Manticore\ManticoreAlterTable;
 use Core\Manticore\ManticoreMysqliFetcher;
 use Mockery;
 use RuntimeException;
 use Tests\Traits\ManticoreConnectorTrait;
 
-class ManticoreAlterIndexTest extends TestCase
+class ManticoreAlterTableTest extends TestCase
 {
     use ManticoreConnectorTrait;
 
@@ -18,32 +18,32 @@ class ManticoreAlterIndexTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->manticoreAlterIndex = new class(null, null, self::CLUSTER_NAME, -1, false) extends
-            ManticoreAlterIndex {
+        $this->manticoreAlterTable = new class(null, null, self::CLUSTER_NAME, -1, false) extends
+            ManticoreAlterTable {
             public function setFetcher(ManticoreMysqliFetcher $fetcher)
             {
                 $this->fetcher = $fetcher;
             }
 
-            public function getCount($index): int
+            public function getCount($table): int
             {
-                return parent::getCount($index);
+                return parent::getCount($table);
             }
 
 
-            public function getRows($index, $limit, $offset)
+            public function getRows($table, $limit, $offset)
             {
-                return parent::getRows($index, $limit, $offset);
+                return parent::getRows($table, $limit, $offset);
             }
 
-            public function insertRows($index, $data, $inCluster = false): bool
+            public function insertRows($table, $data, $inCluster = false): bool
             {
-                return parent::insertRows($index, $data, $inCluster);
+                return parent::insertRows($table, $data, $inCluster);
             }
         };
 
         $this->mockFetcher = \Mockery::mock(ManticoreMysqliFetcher::class);
-        $this->manticoreAlterIndex->setFetcher($this->mockFetcher);
+        $this->manticoreAlterTable->setFetcher($this->mockFetcher);
     }
 
     protected function tearDown(): void
@@ -60,7 +60,7 @@ class ManticoreAlterIndexTest extends TestCase
     {
         $this->mockFetcher
             ->shouldReceive('fetch')
-            ->withArgs(['SELECT count(*) as cnt FROM destination_index'])
+            ->withArgs(['SELECT count(*) as cnt FROM destination_table'])
             ->andReturn([['cnt' => 3]]);
 
         $result = $this->copyDataExpectations();
@@ -75,7 +75,7 @@ class ManticoreAlterIndexTest extends TestCase
     {
         $this->mockFetcher
             ->shouldReceive('fetch')
-            ->withArgs(['SELECT count(*) as cnt FROM destination_index'])
+            ->withArgs(['SELECT count(*) as cnt FROM destination_table'])
             ->andReturn([['cnt' => 1]]);
         $this->expectException(RuntimeException::class);
         $this->copyDataExpectations();
@@ -89,13 +89,13 @@ class ManticoreAlterIndexTest extends TestCase
 
         $this->mockFetcher
             ->shouldReceive('fetch')
-            ->withArgs(['SELECT count(*) as cnt FROM source_index'])
+            ->withArgs(['SELECT count(*) as cnt FROM source_table'])
             ->andReturn([['cnt' => 3]]);
 
         $this->mockFetcher
             ->shouldReceive('query')
             ->withArgs([
-                           'INSERT INTO destination_index (`id`,`query`,`tags`,`filters`) VALUES '.
+                           'INSERT INTO destination_table (`id`,`query`,`tags`,`filters`) VALUES '.
                            '(\'7856541559985012737\', \'经\', \'{"tag":"","inserted":"2023-08-09 17:33:12","updated":"2023-08-09'.
                            ' 17:33:12","originalQuery":"","externalQuery":"","ownQuery":"\u7ecf","ownFilters":"","highlighting":'.
                            'false,"variables":""}\', \'\'),(\'7856541559985012738\', \'小\', \'{"tag":"","inserted":"2023-08-09 '.
@@ -109,7 +109,7 @@ class ManticoreAlterIndexTest extends TestCase
 
         $this->mockFetcher
             ->shouldReceive('fetch')
-            ->withArgs(['SELECT * FROM source_index ORDER BY id ASC limit 3 offset 0'])
+            ->withArgs(['SELECT * FROM source_table ORDER BY id ASC limit 3 offset 0'])
             ->andReturn(
                 [
                     [
@@ -140,11 +140,11 @@ class ManticoreAlterIndexTest extends TestCase
             );
 
 
-        $from = 'source_index';
-        $to = 'destination_index';
+        $from = 'source_table';
+        $to = 'destination_table';
         $batch = 3;
 
-        return $this->manticoreAlterIndex->copyData($from, $to, $batch);
+        return $this->manticoreAlterTable->copyData($from, $to, $batch);
     }
 
 
@@ -156,15 +156,15 @@ class ManticoreAlterIndexTest extends TestCase
     {
         $this->mockFetcher
             ->shouldReceive('fetch')
-            ->withArgs(['SELECT count(*) as cnt FROM source_index'])
+            ->withArgs(['SELECT count(*) as cnt FROM source_table'])
             ->andReturn([['cnt' => 0]]);
 
 
-        $from = 'source_index';
-        $to = 'destination_index';
+        $from = 'source_table';
+        $to = 'destination_table';
         $batch = 3;
 
-        $result = $this->manticoreAlterIndex->copyData($from, $to, $batch);
+        $result = $this->manticoreAlterTable->copyData($from, $to, $batch);
 
         $this->assertTrue($result);
     }
@@ -176,13 +176,13 @@ class ManticoreAlterIndexTest extends TestCase
      */
     public function getCountAssertion()
     {
-        $index = 'test_index';
+        $table = 'test_table';
         $this->mockFetcher
             ->shouldReceive('fetch')
-            ->withArgs(['SELECT count(*) as cnt FROM '.$index])
+            ->withArgs(['SELECT count(*) as cnt FROM '.$table])
             ->andReturn([['cnt' => 5]]);
 
-        $count = $this->manticoreAlterIndex->getCount($index);
+        $count = $this->manticoreAlterTable->getCount($table);
 
         $this->assertEquals(5, $count);
     }
@@ -197,14 +197,14 @@ class ManticoreAlterIndexTest extends TestCase
             ->shouldReceive('getConnectionError')
             ->andReturn("errr");
 
-        $index = 'test_index';
+        $table = 'test_table';
         $this->mockFetcher
             ->shouldReceive('fetch')
-            ->withArgs(['SELECT count(*) as cnt FROM '.$index])
+            ->withArgs(['SELECT count(*) as cnt FROM '.$table])
             ->andReturn(false);
 
         $this->expectException(RuntimeException::class);
-        $this->manticoreAlterIndex->getCount($index);
+        $this->manticoreAlterTable->getCount($table);
     }
 
 
@@ -214,15 +214,15 @@ class ManticoreAlterIndexTest extends TestCase
      */
     public function getRows()
     {
-        $index = 'test_index';
+        $table = 'test_table';
         $limit = 3;
         $offset = 2;
         $this->mockFetcher
             ->shouldReceive('fetch')
-            ->withArgs(['SELECT * FROM '.$index.' ORDER BY id ASC limit '.$limit.' offset '.$offset])
+            ->withArgs(['SELECT * FROM '.$table.' ORDER BY id ASC limit '.$limit.' offset '.$offset])
             ->andReturn(true);
 
-        $result = $this->manticoreAlterIndex->getRows($index, $limit, $offset);
+        $result = $this->manticoreAlterTable->getRows($table, $limit, $offset);
         $this->assertTrue($result);
     }
 
@@ -239,7 +239,7 @@ class ManticoreAlterIndexTest extends TestCase
         $this->mockFetcher
             ->shouldReceive('query')
             ->once()
-            ->withArgs(["INSERT INTO test_index (`col1`,`col2`) VALUES ('value1', 'value2'),('value3', 'value4')", false])
+            ->withArgs(["INSERT INTO test_table (`col1`,`col2`) VALUES ('value1', 'value2'),('value3', 'value4')", false])
             ->andReturn(true);
 
         $data = [
@@ -247,7 +247,7 @@ class ManticoreAlterIndexTest extends TestCase
             ['col1' => 'value3', 'col2' => 'value4']
         ];
 
-        $result = $this->manticoreAlterIndex->insertRows('test_index', $data);
+        $result = $this->manticoreAlterTable->insertRows('test_table', $data);
 
         $this->assertTrue($result);
     }
@@ -260,7 +260,7 @@ class ManticoreAlterIndexTest extends TestCase
             ->shouldReceive('escape_string')
             ->andReturnArg(0);
 
-        $result = $this->manticoreAlterIndex->insertRows('test_index', []);
+        $result = $this->manticoreAlterTable->insertRows('test_table', []);
 
         $this->assertFalse($result);
     }
@@ -276,7 +276,7 @@ class ManticoreAlterIndexTest extends TestCase
         $this->mockFetcher
             ->shouldReceive('query')
             ->once()
-            ->withArgs(["INSERT INTO m1_cluster:test_index (`col1`,`col2`) VALUES ".
+            ->withArgs(["INSERT INTO m1_cluster:test_table (`col1`,`col2`) VALUES ".
                 "('value1', 'value2'),('value3', 'value4')", false])
             ->andReturn(true);
 
@@ -285,7 +285,7 @@ class ManticoreAlterIndexTest extends TestCase
             ['col1' => 'value3', 'col2' => 'value4']
         ];
 
-        $result = $this->manticoreAlterIndex->insertRows('test_index', $data, true);
+        $result = $this->manticoreAlterTable->insertRows('test_table', $data, true);
 
         $this->assertTrue($result);
     }
@@ -295,7 +295,7 @@ class ManticoreAlterIndexTest extends TestCase
      *
      * @return void
      */
-    public function dropIndex()
+    public function dropTable()
     {
         $this->mockFetcher
             ->shouldReceive('getConnectionError')
@@ -312,7 +312,7 @@ class ManticoreAlterIndexTest extends TestCase
             ->withArgs(["DROP TABLE pq"])
             ->andReturn(true);
 
-        $result = $this->manticoreAlterIndex->dropIndex('pq');
+        $result = $this->manticoreAlterTable->dropTable('pq');
         $this->assertTrue($result);
     }
 
@@ -322,7 +322,7 @@ class ManticoreAlterIndexTest extends TestCase
      *
      * @return void
      */
-    public function dropNonClusterIndex()
+    public function dropNonClusterTable()
     {
         $this->mockFetcher
             ->shouldReceive('getConnectionError')
@@ -334,7 +334,7 @@ class ManticoreAlterIndexTest extends TestCase
             ->withArgs(["DROP TABLE pq"])
             ->andReturn(true);
 
-        $result = $this->manticoreAlterIndex->dropIndex('pq', false);
+        $result = $this->manticoreAlterTable->dropTable('pq', false);
         $this->assertTrue($result);
     }
 
@@ -344,7 +344,7 @@ class ManticoreAlterIndexTest extends TestCase
      *
      * @return void
      */
-    public function dropIndexConnectionError()
+    public function dropTableConnectionError()
     {
         $this->mockFetcher
             ->shouldReceive('getConnectionError')
@@ -362,7 +362,7 @@ class ManticoreAlterIndexTest extends TestCase
             ->andReturn(true);
 
         $this->expectException(RuntimeException::class);
-        $this->manticoreAlterIndex->dropIndex('pq');
+        $this->manticoreAlterTable->dropTable('pq');
     }
 
 
@@ -371,7 +371,7 @@ class ManticoreAlterIndexTest extends TestCase
      *
      * @return void
      */
-    public function dropNonClusterIndexConnectionError()
+    public function dropNonClusterTableConnectionError()
     {
         $this->mockFetcher
             ->shouldReceive('getConnectionError')
@@ -385,7 +385,7 @@ class ManticoreAlterIndexTest extends TestCase
 
 
         $this->expectException(RuntimeException::class);
-        $this->manticoreAlterIndex->dropIndex('pq', false);
+        $this->manticoreAlterTable->dropTable('pq', false);
     }
 }
 

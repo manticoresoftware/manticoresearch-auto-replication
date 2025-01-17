@@ -15,12 +15,12 @@ class ManticoreStreamsJson extends ManticoreJson
         parent::__construct($clusterName, $binaryPort);
 
         $this->notification = $notification;
-        $testsIndexMetadata = '/var/lib/manticore/tests/tests.meta';
-        if (!file_exists($testsIndexMetadata)){
+        $testsTableMetadata = '/var/lib/manticore/tests/tests.meta';
+        if (!file_exists($testsTableMetadata)){
             Logger::warning('Tests metadata not found');
         }
 
-        $this->restoreExistingIndexes();
+        $this->restoreExistingTables();
     }
 
     /**
@@ -31,21 +31,21 @@ class ManticoreStreamsJson extends ManticoreJson
      * this method is deprecated because this error stopped happening
      *
      */
-    protected function restoreExistingIndexes(): void
+    protected function restoreExistingTables(): void
     {
         if ($this->conf !== []) {
             $updated = false;
-            foreach (ManticoreStreamsConnector::INDEX_TYPES as $index => $type) {
-                if (isset($this->conf["indexes"][$index])) {
+            foreach (ManticoreStreamsConnector::TABLE_TYPES as $table => $type) {
+                if (isset($this->conf["indexes"][$table])) {
                     continue;
                 }
 
-                if ($this->checkIndexFilesExist($index)) {
+                if ($this->checkTableFilesExist($table)) {
                     $updated = true;
-                    $this->conf["indexes"][$index] = ['type' => $type, 'path' => $index];
-                    Logger::warning('Index '.$index.' ('.$type.') was returned in manticore.json');
+                    $this->conf["indexes"][$table] = ['type' => $type, 'path' => $table];
+                    Logger::warning('Table '.$table.' ('.$type.') was returned in manticore.json');
                     $this->notification->sendMessage(
-                        'Index '.$index.' ('.$type.') in cluster '.$this->clusterName.' was returned in manticore.json'
+                        'Table '.$table.' ('.$type.') in cluster '.$this->clusterName.' was returned in manticore.json'
                     );
                 }
             }
@@ -56,7 +56,7 @@ class ManticoreStreamsJson extends ManticoreJson
         }
     }
 
-    protected function checkIndexFilesExist($name): bool
+    protected function checkTableFilesExist($name): bool
     {
         $dirPath = DIRECTORY_SEPARATOR.'var'.DIRECTORY_SEPARATOR.'lib'.DIRECTORY_SEPARATOR.'manticore'.DIRECTORY_SEPARATOR.$name;
 
