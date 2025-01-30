@@ -132,7 +132,7 @@ class ManticoreStreamsConnectorTest extends TestCase
 
         $this->mockFetcher->shouldReceive('fetch')
             ->withArgs(['show tables', true])
-            ->andReturn([['Index' => 'pq', 'Type' => 'percolate']]);
+            ->andReturn([['Table' => 'pq', 'Type' => 'percolate']]);
 
         $this->mockFetcher
             ->shouldReceive('getConnectionError')
@@ -196,8 +196,8 @@ class ManticoreStreamsConnectorTest extends TestCase
         $this->mockFetcher->shouldReceive('fetch')
             ->withArgs(['show tables', true])
             ->andReturn([
-                            ['Index' => 'pq', 'Type' => 'percolate'],
-                            ['Index' => 'tests', 'Type' => 'rt'],
+                            ['Table' => 'pq', 'Type' => 'percolate'],
+                            ['Table' => 'tests', 'Type' => 'rt'],
                         ]);
 
         $this->expectAlterAdd('pq');
@@ -230,8 +230,8 @@ class ManticoreStreamsConnectorTest extends TestCase
         $this->mockFetcher->shouldReceive('fetch')
             ->withArgs(['show tables', true])
             ->andReturn([
-                            ['Index' => 'pq', 'Type' => 'percolate'],
-                            ['Index' => 'tests', 'Type' => 'rt'],
+                            ['Table' => 'pq', 'Type' => 'percolate'],
+                            ['Table' => 'tests', 'Type' => 'rt'],
                         ]);
 
         $this->mockFetcher
@@ -392,7 +392,7 @@ class ManticoreStreamsConnectorTest extends TestCase
                            "`url_host_path` text indexed,".
                            "`url_query` text indexed,".
                            "`url_anchor` text indexed) type='".
-                           ManticoreStreamsConnector::INDEX_TYPES[$table]."' charset_table = 'cjk, non_cjk'"
+                           ManticoreStreamsConnector::TABLE_TYPES[$table]."' charset_table = 'cjk, non_cjk'"
                        ])
             ->andReturn(true);
     }

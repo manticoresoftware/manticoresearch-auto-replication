@@ -82,7 +82,7 @@ class ManticoreConnector
                     continue;
                 }
             }
-            $tables[] = $row['Index'];
+            $tables[] = $row['Table'];
         }
 
         return $tables;
@@ -255,15 +255,15 @@ class ManticoreConnector
         return $searchdSettings;
     }
 
-    public function reloadIndexes()
+    public function reloadTables()
     {
-        return $this->fetcher->query('RELOAD INDEXES');
+        return $this->fetcher->query('RELOAD TABLES');
     }
 
-    public function getChunksCount($index, $log = true): int
+    public function getChunksCount($table, $log = true): int
     {
-        $indexStatus = $this->fetcher->fetch('SHOW INDEX '.$index.' STATUS', $log);
-        foreach ($indexStatus as $row) {
+        $tableStatus = $this->fetcher->fetch('SHOW TABLE '.$table.' STATUS', $log);
+        foreach ($tableStatus as $row) {
             if ($row["Variable_name"] === 'disk_chunks') {
                 return (int)$row["Value"];
             }
@@ -272,9 +272,9 @@ class ManticoreConnector
     }
 
 
-    public function optimize($index, $cutoff)
+    public function optimize($table, $cutoff)
     {
-        return $this->fetcher->query('OPTIMIZE INDEX '.$index.' OPTION cutoff='.$cutoff);
+        return $this->fetcher->query('OPTIMIZE TABLE '.$table.' OPTION cutoff='.$cutoff);
     }
 
     public function showThreads($log = true)

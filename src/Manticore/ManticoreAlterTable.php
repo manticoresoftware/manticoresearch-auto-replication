@@ -5,7 +5,7 @@ namespace Core\Manticore;
 use Core\Logger\Logger;
 use RuntimeException;
 
-class ManticoreAlterIndex extends ManticoreConnector
+class ManticoreAlterTable extends ManticoreConnector
 {
 
     /**
@@ -28,10 +28,11 @@ class ManticoreAlterIndex extends ManticoreConnector
             Logger::debug("Processed (from $from to $to) : ".ceil($i / $maxIterations * 100)."%");
         }
 
-        $newIndexRowsCount = $this->getCount($to);
+        $newTableRowsCount = $this->getCount($to);
 
-        if ($newIndexRowsCount !== $allCount) {
-            throw new RuntimeException('Count after inserting in '.$to.' don\'t equal count from '.$from.' '.$newIndexRowsCount.' != '.$allCount);
+        if ($newTableRowsCount !== $allCount) {
+            throw new RuntimeException('Count after inserting in '.$to
+                .' don\'t equal count from '.$from.' '.$newTableRowsCount.' != '.$allCount);
         }
 
         return true;
@@ -40,23 +41,23 @@ class ManticoreAlterIndex extends ManticoreConnector
     /**
      * @throws RuntimeException
      */
-    protected function getCount($index): int
+    protected function getCount($table): int
     {
-        $result = $this->fetcher->fetch(/* @sql manticore */'SELECT count(*) as cnt FROM '.$index);
+        $result = $this->fetcher->fetch(/* @sql manticore */'SELECT count(*) as cnt FROM '.$table);
         if ( ! $result) {
-            throw new RuntimeException('Can\'t get index '.$index.' count. '.$this->getConnectionError());
+            throw new RuntimeException('Can\'t get table '.$table.' count. '.$this->getConnectionError());
         }
 
         return (int) $result[0]['cnt'] ?? 0;
     }
 
-    protected function getRows($index, $limit, $offset)
+    protected function getRows($table, $limit, $offset)
     {
-        $query  = /* @sql manticore */ 'SELECT * FROM '.$index.' ORDER BY id ASC limit '.$limit.' offset '.$offset;
+        $query  = /* @sql manticore */ 'SELECT * FROM '.$table.' ORDER BY id ASC limit '.$limit.' offset '.$offset;
         return $this->fetcher->fetch($query);
     }
 
-    protected function insertRows($index, $data, $inCluster = false): bool
+    protected function insertRows($table, $data, $inCluster = false): bool
     {
         $clusterAppend = '';
         if ($inCluster) {
@@ -79,7 +80,7 @@ class ManticoreAlterIndex extends ManticoreConnector
         }
 
         if ($values !== []) {
-            $query = "INSERT INTO ".$clusterAppend.$index." (`".implode('`,`', array_keys($keys))."`) VALUES (".implode('),(', $values).")";
+            $query = "INSERT INTO ".$clusterAppend.$table." (`".implode('`,`', array_keys($keys))."`) VALUES (".implode('),(', $values).")";
             $this->fetcher->query($query, false);
             return true;
         }
@@ -90,20 +91,20 @@ class ManticoreAlterIndex extends ManticoreConnector
     /**
      * @throws RuntimeException
      */
-    public function dropIndex($index, $inCluster = true): bool
+    public function dropTable($table, $inCluster = true): bool
     {
         if ($inCluster) {
-            $sql = "ALTER CLUSTER ".$this->clusterName." DROP ".$index;
+            $sql = "ALTER CLUSTER ".$this->clusterName." DROP ".$table;
             $this->fetcher->query($sql);
             if ($this->getConnectionError()) {
-                throw new RuntimeException('Can\'t remove index '.$index.' from cluster. '.$this->getConnectionError());
+                throw new RuntimeException('Can\'t remove table '.$table.' from cluster. '.$this->getConnectionError());
             }
         }
 
-        $sql = "DROP TABLE ".$index;
+        $sql = "DROP TABLE ".$table;
         $this->fetcher->query($sql);
         if ($this->getConnectionError()) {
-            throw new RuntimeException('Can\'t drop index '.$index.' '.$this->getConnectionError());
+            throw new RuntimeException('Can\'t drop table '.$table.' '.$this->getConnectionError());
         }
 
         return true;

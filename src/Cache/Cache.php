@@ -5,11 +5,11 @@ namespace Core\Cache;
 
 class Cache
 {
-    public const INDEX_HASH = 'index_hash';
+    public const TABLE_HASH = 'table_hash';
     public const CHECKED_WORKERS = 'checked_workers';
-    public const CHECKED_INDEXES = 'checked_indexes';
+    public const CHECKED_TABLES = 'checked_tables';
 
-    private string $cacheStorageFile = DIRECTORY_SEPARATOR.'tmp'.DIRECTORY_SEPARATOR.'index_hash.dat';
+    private string $cacheStorageFile = DIRECTORY_SEPARATOR.'tmp'.DIRECTORY_SEPARATOR.'table_hash.dat';
     private array $cache = [];
 
     public function __construct()
