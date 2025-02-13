@@ -342,10 +342,10 @@ class ResourcesTest extends TestCase
             ->andReturn($defaultAnswer);
 
         $this->assertSame([
-                              'manticore-helm-manticoresearch-balancer-6d9fcc96c5-fkvhc..manticore-helm.svc.cluster.local',
-                              'manticore-helm-manticoresearch-worker-0.manticore-helm-manticoresearch-worker-svc.manticore-helm.svc.cluster.local',
-                              'manticore-helm-manticoresearch-worker-1.manticore-helm-manticoresearch-worker-svc.manticore-helm.svc.cluster.local',
-                              'manticore-helm-manticoresearch-worker-2.manticore-helm-manticoresearch-worker-svc.manticore-helm.svc.cluster.local'
+                              'manticore-helm-manticoresearch-balancer-6d9fcc96c5-fkvhc..manticore-helm',
+                              'manticore-helm-manticoresearch-worker-0.manticore-helm-manticoresearch-worker-svc.manticore-helm',
+                              'manticore-helm-manticoresearch-worker-1.manticore-helm-manticoresearch-worker-svc.manticore-helm',
+                              'manticore-helm-manticoresearch-worker-2.manticore-helm-manticoresearch-worker-svc.manticore-helm'
                           ],
                           $this->resources->getPodsFullHostnames());
     }
