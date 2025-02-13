@@ -143,9 +143,9 @@ class ManticoreJsonTest extends TestCase
         $this->manticoreMock->shouldReceive('checkClusterName')->andReturn(true, false, true);
 
         $newNodesList = [
-            'manticore-helm-manticoresearch-worker-0.manticore-helm-manticoresearch-worker-svc.manticore-helm.svc.cluster.local',
-            'manticore-helm-manticoresearch-worker-1.manticore-helm-manticoresearch-worker-svc.manticore-helm.svc.cluster.local',
-            'manticore-helm-manticoresearch-worker-2.manticore-helm-manticoresearch-worker-svc.manticore-helm.svc.cluster.local'
+            'manticore-helm-manticoresearch-worker-0.manticore-helm-manticoresearch-worker-svc.manticore-helm',
+            'manticore-helm-manticoresearch-worker-1.manticore-helm-manticoresearch-worker-svc.manticore-helm',
+            'manticore-helm-manticoresearch-worker-2.manticore-helm-manticoresearch-worker-svc.manticore-helm'
         ];
         $resourceMock->method('getPodsFullHostnames')
             ->willReturn($newNodesList);
