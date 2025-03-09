@@ -5,7 +5,7 @@ namespace Core\Manticore;
 use Core\Logger\Logger;
 use RuntimeException;
 
-class ManticoreAlterTable extends ManticoreConnector
+class ManticoreAlterTable extends ManticoreStreamsConnector
 {
 
     /**
