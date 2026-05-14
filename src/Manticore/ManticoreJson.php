@@ -59,6 +59,9 @@ class ManticoreJson
             return [];
         }
         $nodes = $this->conf['clusters'][$this->clusterName]['nodes'];
+        if (trim($nodes) === '') {
+            return [];
+        }
 
         return explode(',', $nodes);
     }
@@ -77,6 +80,39 @@ class ManticoreJson
                 $this->saveConf();
             }
         }
+    }
+
+    public function filterClusterNodesByAvailability($port, $shortClusterName, $attempts): void
+    {
+        $nodes = $this->getClusterNodes();
+        if ($nodes === []) {
+            return;
+        }
+
+        Logger::info("Filter cluster nodes by availability");
+        Logger::debug("Stored cluster nodes ".json_encode($nodes));
+
+        $availableNodes = [];
+        foreach ($nodes as $node) {
+            $node = trim($node);
+            if ($node === '') {
+                continue;
+            }
+
+            $hostname = $this->extractHostFromNode($node);
+            try {
+                $connection = $this->getManticoreConnection($hostname, $port, $shortClusterName, $attempts);
+                if (!$connection->checkClusterName()) {
+                    Logger::warning("Cluster name mismatch at $hostname");
+                    continue;
+                }
+                $availableNodes[] = $node;
+            } catch (\RuntimeException $exception) {
+                Logger::error("Node at $hostname no more available\n".$exception->getMessage());
+            }
+        }
+
+        $this->replaceNodesList($availableNodes);
     }
 
     public function getConf()
@@ -154,6 +190,25 @@ class ManticoreJson
     {
         return new ManticoreConnector($hostname, $port, $shortClusterName, $attempts);
     }
+
+    protected function extractHostFromNode(string $node): string
+    {
+        $parts = explode(':', $node);
+        return $parts[0];
+    }
+
+    protected function replaceNodesList(array $nodesList): void
+    {
+        $newNodes = implode(',', $nodesList);
+
+        if (!isset($this->conf['clusters'][$this->clusterName]['nodes'])
+            || $newNodes !== $this->conf['clusters'][$this->clusterName]['nodes']
+        ) {
+            $this->conf['clusters'][$this->clusterName]['nodes'] = $newNodes;
+            $this->saveConf();
+        }
+    }
+
     protected function readConf(): array
     {
         if (file_exists($this->path)) {

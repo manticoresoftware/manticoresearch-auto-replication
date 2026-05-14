@@ -89,6 +89,11 @@ class ManticoreJsonTest extends TestCase
         unset($conf['clusters']['m_cluster']['nodes']);
         $manticoreJson = $this->getManticoreJsonClass($conf);
         $this->assertSame([], $manticoreJson->getClusterNodes());
+
+        $conf = $this->getConf();
+        $conf['clusters']['m_cluster']['nodes'] = '';
+        $manticoreJson = $this->getManticoreJsonClass($conf);
+        $this->assertSame([], $manticoreJson->getClusterNodes());
     }
 
 
@@ -158,6 +163,40 @@ class ManticoreJsonTest extends TestCase
             $newNodesList[$k] .= ':9312';
         }
         $this->assertSame(implode(',', $newNodesList), $conf['clusters']['m_cluster']['nodes']);
+    }
+
+    /**
+     * @test
+     *
+     * @return void
+     */
+    public function filterClusterNodesByAvailability()
+    {
+        $manticoreJson = $this->getManticoreJsonClass($this->getConf());
+
+        $this->manticoreMock->shouldReceive('checkClusterName')->andReturn(false, true);
+
+        $manticoreJson->filterClusterNodesByAvailability(9306, 'm1', 1);
+        $conf = $manticoreJson->getConf();
+
+        $this->assertSame('92.168.0.1:9312', $conf['clusters']['m_cluster']['nodes']);
+    }
+
+    /**
+     * @test
+     *
+     * @return void
+     */
+    public function filterClusterNodesByAvailabilityClearsUnavailableNodes()
+    {
+        $manticoreJson = $this->getManticoreJsonClass($this->getConf());
+
+        $this->manticoreMock->shouldReceive('checkClusterName')->andReturn(false, false);
+
+        $manticoreJson->filterClusterNodesByAvailability(9306, 'm1', 1);
+        $conf = $manticoreJson->getConf();
+
+        $this->assertSame('', $conf['clusters']['m_cluster']['nodes']);
     }
 
     /**
