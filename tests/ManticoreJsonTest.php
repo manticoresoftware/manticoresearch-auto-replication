@@ -94,6 +94,11 @@ class ManticoreJsonTest extends TestCase
         $conf['clusters']['m_cluster']['nodes'] = '';
         $manticoreJson = $this->getManticoreJsonClass($conf);
         $this->assertSame([], $manticoreJson->getClusterNodes());
+
+        $conf = $this->getConf();
+        $conf['clusters']['m_cluster']['nodes'] = ['192.168.0.1:9312', '92.168.0.1:9312'];
+        $manticoreJson = $this->getManticoreJsonClass($conf);
+        $this->assertSame($conf['clusters']['m_cluster']['nodes'], $manticoreJson->getClusterNodes());
     }
 
 

@@ -59,6 +59,9 @@ class ManticoreJson
             return [];
         }
         $nodes = $this->conf['clusters'][$this->clusterName]['nodes'];
+        if (is_array($nodes)) {
+            return $nodes;
+        }
         if (trim($nodes) === '') {
             return [];
         }
